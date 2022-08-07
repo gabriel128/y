@@ -48,6 +48,7 @@ library
     , containers
     , either
     , mtl
+    , string-random
     , text
   default-language: Haskell2010
 
@@ -73,6 +74,7 @@ executable yacll-exe
     , containers
     , either
     , mtl
+    , string-random
     , text
     , yacll
   default-language: Haskell2010
@@ -101,6 +103,7 @@ test-suite yacll-test
     , containers
     , either
     , mtl
+    , string-random
     , tasty
     , tasty-hunit
     , tasty-smallcheck

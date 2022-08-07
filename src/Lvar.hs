@@ -5,6 +5,7 @@ import Data.Either.Combinators
 import Data.Map as M
 import Data.Maybe
 import qualified Data.Text as T
+import qualified Utils
 import Prelude as P
 
 -- exp ::= Int
@@ -14,16 +15,16 @@ import Prelude as P
 -- Program ::= Program {[] [exp]})
 
 data Func = Func {funcId :: T.Text, funcArgs :: [Expr]}
-  deriving (Show)
+  deriving (Eq, Show)
 
 data UnaryOp
   = Neg
-  deriving (Show)
+  deriving (Eq, Show)
 
 data BinOp
   = Add
   | Sub
-  deriving (Show)
+  deriving (Eq, Show)
 
 data Expr
   = Const Int
@@ -31,12 +32,12 @@ data Expr
   | UnaryOp UnaryOp Expr
   | BinOp BinOp Expr Expr
   | Var T.Text
-  deriving (Show)
+  deriving (Eq, Show)
 
 data Stmt
   = Let T.Text Expr
   | Return Expr
-  deriving (Show)
+  deriving (Eq, Show)
 
 newtype Program = Program [Stmt] deriving (Show)
 
@@ -68,7 +69,16 @@ interpStmt env (Return expr) = do
   exprRes <- interpExpr env expr
   pure (StmtResult env (Just exprRes))
 
--- interpStmt _ stmt = Left (T.pack ("Error on interpreting statement" <> show stmt))
+removeComplexExp :: Expr -> [(Stmt, Expr)]
+removeComplexExp (Const _) = []
+removeComplexExp (Var _) = []
+removeComplexExp expr = let varName = Utils.randVarName in [(Let varName expr, Var varName)]
+
+removeComplexStmt :: Stmt -> [Stmt]
+removeComplexStmt initStmt@(Let binding expr) = go (removeComplexExp expr)
+  where
+    go [(newStmt, expr')] = [newStmt, Let binding expr']
+    go _ = [initStmt]
 
 -- Makes the bound variables have a unique_name
 interpStmts :: [Stmt] -> Either T.Text StmtResult
@@ -77,8 +87,6 @@ interpStmts = foldM go emptyStmtResult
     go :: StmtResult -> Stmt -> Either T.Text StmtResult
     go (StmtResult env Nothing) stmt = interpStmt env stmt
     go res _ = Right res
-
---   go stmt prevStmtRes = prevStmtRes >>= (\res -> interpStmt (getEnv res) stmt)
 
 interpProg :: Program -> T.Text
 interpProg (Program stmts) = either id (maybe "Empty" (T.pack . show) . getResult) (interpStmts stmts)

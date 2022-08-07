@@ -25,6 +25,7 @@ dependencies:
 - text
 - containers
 - either
+- string-random
 
 library:
   source-dirs: src
