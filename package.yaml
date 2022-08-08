@@ -28,7 +28,8 @@ dependencies:
 - string-random
 
 library:
-  source-dirs: src
+  source-dirs:
+    - src
 
 executables:
   yacll-exe:
@@ -43,6 +44,9 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - yacll
+    when:
+    - condition: false
+      other-modules: Paths_yacll
 
 tests:
   yacll-test:

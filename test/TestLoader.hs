@@ -1,3 +1,4 @@
+import IdTests
 import InterpreterTests
 import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.HUnit (testCase, (@?=))
@@ -9,4 +10,4 @@ tests :: TestTree
 tests =
   testGroup
     "Tests"
-    [test_programs]
+    [test_programs, test_id_ir]

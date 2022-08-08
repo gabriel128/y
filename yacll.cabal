@@ -25,10 +25,14 @@ source-repository head
 
 library
   exposed-modules:
+      Ast.Ast
+      Ast.Examples
+      Interpreter.Eval
+      Irs.Id
+      Irs.X86
+      Irs.X86Var
       Lib
-      Lvar
       Utils
-      X86
   other-modules:
       Paths_yacll
   hs-source-dirs:
@@ -54,8 +58,6 @@ library
 
 executable yacll-exe
   main-is: Main.hs
-  other-modules:
-      Paths_yacll
   hs-source-dirs:
       app
   default-extensions:
@@ -83,6 +85,7 @@ test-suite yacll-test
   type: exitcode-stdio-1.0
   main-is: TestLoader.hs
   other-modules:
+      IdTests
       InterpreterTests
       Paths_yacll
   hs-source-dirs:

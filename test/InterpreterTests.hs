@@ -1,7 +1,10 @@
 module InterpreterTests (test_programs) where
 
+import Ast.Ast
+import Ast.Examples
 import Data.Map
-import Lvar
+import Interpreter.Eval
+import Irs.Id
 import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase, (@?=))
 
@@ -29,20 +32,7 @@ unitTests =
         interpProg (Program [stmt0, stmt1, stmt2, stmt3]) @?= "2",
       --
       testCase "interpret incorrect program" $
-        interpProg (Program [stmt0, stmt1, stmt3, stmt2]) @?= "Can't find variable z",
-      --
-      testCase "remove complex ops do nothing when not needed" $
-        removeComplexStmt (Let "x" (Const 8)) @?= [Let "x" (Const 8)],
-      --
-      testCase "remove complex ops on Unary" $
-        case removeComplexStmt (Let "x" (UnaryOp Neg (Const 8))) of
-          [Let var (UnaryOp Neg (Const 8)), Let "x" (Var var1)] -> assertBool "tmp vars are not equal" (var == var1)
-          _ -> assertBool "It didn't construct the correct tmp vars" False,
-      --
-      testCase "remove complex ops on Binary ops" $
-        case removeComplexStmt (Let "x" (BinOp Add (Const 10) (Const 8))) of
-          [Let var (BinOp Add (Const 10) (Const 8)), Let "x" (Var var1)] -> assertBool "tmp vars are not equal" (var == var1)
-          res -> assertBool ("It didn't construct the correct tmp vars, got: " <> show res) False
+        interpProg (Program [stmt0, stmt1, stmt3, stmt2]) @?= "Can't find variable z"
     ]
 
 -- props = testGroup "ListStack properties"
