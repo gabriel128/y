@@ -28,7 +28,7 @@ library
       Ast.Ast
       Ast.Examples
       Interpreter.Eval
-      Irs.Id
+      Irs.Atomize
       Irs.X86
       Irs.X86Var
       Lib
@@ -52,7 +52,7 @@ library
     , containers
     , either
     , mtl
-    , string-random
+    , random
     , text
   default-language: Haskell2010
 
@@ -76,7 +76,7 @@ executable yacll-exe
     , containers
     , either
     , mtl
-    , string-random
+    , random
     , text
     , yacll
   default-language: Haskell2010
@@ -85,7 +85,7 @@ test-suite yacll-test
   type: exitcode-stdio-1.0
   main-is: TestLoader.hs
   other-modules:
-      IdTests
+      AtomizeTests
       InterpreterTests
       Paths_yacll
   hs-source-dirs:
@@ -106,7 +106,7 @@ test-suite yacll-test
     , containers
     , either
     , mtl
-    , string-random
+    , random
     , tasty
     , tasty-hunit
     , tasty-smallcheck

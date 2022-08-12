@@ -1,7 +1,6 @@
-import IdTests
+import AtomizeTests
 import InterpreterTests
 import Test.Tasty (TestTree, defaultMain, testGroup)
-import Test.Tasty.HUnit (testCase, (@?=))
 
 main :: IO ()
 main = defaultMain tests

@@ -1,7 +1,7 @@
 module Lib where
 
 import Ast.Ast
-import qualified Irs.Id as Id
+import qualified Irs.Atomize as Atomize
 
 compile :: Program -> Program
-compile (Program stmts) = Program (concatMap Id.removeComplexStmt stmts)
+compile (Program stmts) = Program (concatMap Atomize.removeComplexStmt stmts)

@@ -4,9 +4,8 @@ import Ast.Ast
 import Ast.Examples
 import Data.Map
 import Interpreter.Eval
-import Irs.Id
-import Test.Tasty (TestTree, defaultMain, testGroup)
-import Test.Tasty.HUnit (assertBool, assertEqual, testCase, (@?=))
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.HUnit (testCase, (@?=))
 
 -- import Test.Tasty.SmallCheck as SC
 
@@ -19,6 +18,7 @@ expr =
       ast1_1 = BinOp Add (Const 42) negEight
    in ast1_1
 
+unitTests :: TestTree
 unitTests =
   testGroup
     "ListStack"
