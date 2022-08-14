@@ -26,6 +26,7 @@ dependencies:
 - containers
 - either
 - random
+- megaparsec
 
 library:
   source-dirs:

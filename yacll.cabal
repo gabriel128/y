@@ -32,6 +32,7 @@ library
       Irs.X86
       Irs.X86Var
       Lib
+      Parser.Parser
       Utils
   other-modules:
       Paths_yacll
@@ -51,6 +52,7 @@ library
       base >=4.7 && <5
     , containers
     , either
+    , megaparsec
     , mtl
     , random
     , text
@@ -75,6 +77,7 @@ executable yacll-exe
       base >=4.7 && <5
     , containers
     , either
+    , megaparsec
     , mtl
     , random
     , text
@@ -87,6 +90,7 @@ test-suite yacll-test
   other-modules:
       AtomizeTests
       InterpreterTests
+      ParserTests
       Paths_yacll
   hs-source-dirs:
       test
@@ -105,6 +109,7 @@ test-suite yacll-test
       base >=4.7 && <5
     , containers
     , either
+    , megaparsec
     , mtl
     , random
     , tasty
