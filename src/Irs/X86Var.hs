@@ -20,13 +20,13 @@ data Instr
   | Jmp Label
   deriving (Eq, Show)
 
-newtype X86Var = X86Var [Instr]
+data X86Var = X86Var Ast.Info [Instr]
 
 fromAst :: Ast.Program -> Either T.Text X86Var
-fromAst (Ast.Program stmt) =
+fromAst (Ast.Program info stmt) =
   do
     instrs <- fmap concat (mapM fromStmtToInstrs stmt)
-    pure (X86Var instrs)
+    pure (X86Var info instrs)
 
 fromStmtToInstrs :: Ast.Stmt -> Either T.Text [Instr]
 fromStmtToInstrs (Ast.Let binding (Ast.Const num)) =

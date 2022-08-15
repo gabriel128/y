@@ -1,6 +1,7 @@
 module InterpreterTests (test_programs) where
 
 import Ast.Ast
+import Ast.Ast (makeDefaultInfo)
 import Ast.Examples
 import Data.Map
 import Interpreter.Eval
@@ -29,10 +30,10 @@ unitTests =
         interpExpr empty expr @?= Right 34,
       --
       testCase "interpret correct program" $
-        interpProg (Program [stmt0, stmt1, stmt2, stmt3]) @?= "2",
+        interpProg (Program makeDefaultInfo [stmt0, stmt1, stmt2, stmt3]) @?= "2",
       --
       testCase "interpret incorrect program" $
-        interpProg (Program [stmt0, stmt1, stmt3, stmt2]) @?= "Can't find variable z"
+        interpProg (Program makeDefaultInfo [stmt0, stmt1, stmt3, stmt2]) @?= "Can't find variable z"
     ]
 
 -- props = testGroup "ListStack properties"

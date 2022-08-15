@@ -29,6 +29,7 @@ library
       Ast.Examples
       Interpreter.Eval
       Irs.Atomize
+      Irs.Irs
       Irs.X86
       Irs.X86Var
       Lib

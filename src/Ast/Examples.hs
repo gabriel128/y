@@ -15,4 +15,4 @@ stmt3 :: Stmt
 stmt3 = Return (BinOp Add (Var "z") (UnaryOp Neg (Const 7)))
 
 testProg :: Program
-testProg = Program [stmt0, stmt1, stmt2, stmt3]
+testProg = Program (Info [] 0) [stmt0, stmt1, stmt2, stmt3]
