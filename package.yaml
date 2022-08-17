@@ -27,6 +27,7 @@ dependencies:
 - either
 - random
 - megaparsec
+- neat-interpolation
 
 library:
   source-dirs:
@@ -75,3 +76,5 @@ default-extensions:
   - ConstrainedClassMethods
   - DisambiguateRecordFields
   - OverloadedStrings
+  - Strict
+  - StrictData
