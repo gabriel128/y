@@ -49,7 +49,7 @@ handlBinOp x op (Ast.Const num1) (Ast.Const num2) =
 handlBinOp x op (Ast.Const num) (Ast.Var y)
   | x == y = Right [Mov Rax (Var y), BinOp (fromBinop op) Rax (Imm num), Mov (Var x) Rax]
   | otherwise = Right [Mov (Var x) (Var y), BinOp (fromBinop op) (Var x) (Imm num)]
--- x = z + y -> mov x, y; add x, z; TODO: Fix with rax
+-- x = z + y -> mov x, y; add x, z;
 -- x = z + x -> add x, z;
 handlBinOp x op (Ast.Var y) (Ast.Var z)
   | x == y = Right [BinOp (fromBinop op) (Var x) (Var z)]

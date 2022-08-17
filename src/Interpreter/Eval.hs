@@ -8,6 +8,13 @@ import Data.Maybe
 import qualified Data.Text as T
 import Prelude as P
 
+type Env = M.Map T.Text Int
+
+data StmtResult = StmtResult {getEnv :: Env, getResult :: Maybe Int} deriving (Show, Eq)
+
+createEnv :: Env
+createEnv = empty
+
 --- Interpreter
 interpExpr :: Env -> Expr -> Either T.Text Int
 interpExpr _ (Const n) = Right n

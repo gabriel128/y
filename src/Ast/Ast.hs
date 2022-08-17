@@ -1,6 +1,5 @@
 module Ast.Ast where
 
-import Data.Map as M
 import qualified Data.Text as T
 import Data.Word
 
@@ -31,21 +30,14 @@ data Stmt
 
 type Locals = [T.Text]
 
-type StackOffset = Word16
+type StackOffset = Int
 
 data Info = Info {infoLocals :: Locals, infoStackOffset :: StackOffset} deriving (Show, Eq)
 
 data Program = Program {progInfo :: Info, progStmts :: [Stmt]} deriving (Show, Eq)
-
-type Env = M.Map T.Text Int
-
-data StmtResult = StmtResult {getEnv :: Env, getResult :: Maybe Int} deriving (Show, Eq)
 
 makeDefaultInfo :: Info
 makeDefaultInfo = Info [] 0
 
 addLocal :: T.Text -> Info -> Info
 addLocal text (Info locals sOffet) = Info (locals ++ [text]) sOffet
-
-createEnv :: Env
-createEnv = empty

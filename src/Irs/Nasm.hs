@@ -22,9 +22,9 @@ class Print s where
 
 type Label = T.Text
 
-type Offset = Word8
+type Offset = Int
 
-newtype Imm = Imm Word32 deriving (Eq)
+newtype Imm = Imm Int deriving (Eq)
 
 instance Print Imm where
   textPrint (Imm num) = T.pack $ show num
