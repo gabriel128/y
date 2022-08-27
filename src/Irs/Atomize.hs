@@ -38,14 +38,6 @@ removeComplexStmts (Program stmts) = fmap snd $
       stmts' <- removeComplexStmt stmt
       pure (prevStmts' ++ stmts')
 
----------------- OLD
--- removeComplexStmts' :: Info -> [Stmt] -> Program
--- removeComplexStmts' info rawStmts = snd $ foldl' reducer (createRandomGen, Program info []) rawStmts
---   where
---     reducer (gen, Program info' stmts) stmt =
---       let (gen', Program info'' stmts') = removeComplexStmt info' gen stmt
---        in (gen', Program info'' (stmts ++ stmts'))
-
 removeComplexStmt :: Stmt -> PassEffs.StErrRnd sig m [Stmt]
 removeComplexStmt (Let binding expr) = do
   (stmts, lastExpr) <- removeComplexExp expr
@@ -61,28 +53,29 @@ removeComplexStmt _ = throwError (pack "Stmt not handled")
 -- -- [Let var (UnaryOp Neg (Const 8))], UnaryOp Neg (Var var1)]
 removeComplexExp :: Expr -> PassEffs.StErrRnd sig m ([Stmt], Expr)
 removeComplexExp expr | isReduced expr = pure ([], expr)
-removeComplexExp (UnaryOp op expr) = do
+removeComplexExp (UnaryOp op expr) = createSingleVar expr (UnaryOp op)
+removeComplexExp (BinOp op exprL exprR)
+  | isAtomic exprL = createSingleVar exprR (BinOp op exprL)
+  | isAtomic exprR = createSingleVar exprL $ flip (BinOp op) exprR
+  | otherwise = createDoubleVar exprL exprR (BinOp op)
+removeComplexExp expr = throwError (pack $ "Unhandled expression" <> show expr)
+
+createSingleVar :: Expr -> (Expr -> Expr) -> PassEffs.StErrRnd sig m ([Stmt], Expr)
+createSingleVar expr expConstr = do
   varName <- Utils.freshVarName fresh
   (stmts, expr') <- removeComplexExp expr
   modify (addLocal varName)
-  pure (stmts ++ [Let varName expr'], UnaryOp op (Var varName))
+  pure (stmts ++ [Let varName expr'], expConstr (Var varName))
 
--- removeComplexExp info gen (BinOp op exprL exprR)
---   | isAtomic exprL =
---     let (varName, newGen) = Utils.randVarName gen
---         (newGen', info', stmts, exprR') = removeComplexExp info newGen exprR
---      in (newGen', addLocal varName info', stmts ++ [Let varName exprR'], BinOp op exprL (Var varName))
---   | isAtomic exprR =
---     let (varName, newGen) = Utils.randVarName gen
---         (newGen', info', stmts, exprL') = removeComplexExp info newGen exprL
---      in (newGen', addLocal varName info', stmts ++ [Let varName exprL'], BinOp op (Var varName) exprR)
---   | otherwise =
---     let (varNameL, newGen) = Utils.randVarName gen
---         (varNameR, newGen') = Utils.randVarName newGen
---         (newGen'', info', stmtsL, exprL') = removeComplexExp info newGen' exprL
---         (newGen''', info'', stmtsR, exprR') = removeComplexExp (addLocal varNameL info') newGen'' exprR
---      in (newGen''', addLocal varNameR info'', stmtsL ++ [Let varNameL exprL'] ++ stmtsR ++ [Let varNameR exprR'], BinOp op (Var varNameL) (Var varNameR))
--- removeComplexExp info gen expr = (gen, info, [], expr)
+createDoubleVar :: Expr -> Expr -> (Expr -> Expr -> Expr) -> PassEffs.StErrRnd sig m ([Stmt], Expr)
+createDoubleVar exprL exprR expConstr = do
+  varNameL <- Utils.freshVarName fresh
+  varNameR <- Utils.freshVarName fresh
+  (stmtsL, exprL') <- removeComplexExp exprL
+  (stmtsR, exprR') <- removeComplexExp exprR
+  modify (addLocal varNameL)
+  modify (addLocal varNameR)
+  pure (stmtsL ++ [Let varNameL exprL'] ++ stmtsR ++ [Let varNameR exprR'], expConstr (Var varNameL) (Var varNameR))
 
 isAtomic :: Expr -> Bool
 isAtomic (Const _) = True
