@@ -27,10 +27,14 @@ library
   exposed-modules:
       Ast.Ast
       Ast.Examples
+      Defs
+      Experiments
       Interpreter.Eval
       Irs.Atomize
+      Irs.Atomizebk
       Irs.Irs
       Irs.Nasm
+      Irs.PassEffs
       Irs.X86
       Irs.X86Var
       Lib
@@ -52,10 +56,18 @@ library
       OverloadedStrings
       Strict
       StrictData
+      FlexibleInstances
+      GeneralizedNewtypeDeriving
+      MultiParamTypeClasses
+      TypeApplications
+      TypeOperators
+      UndecidableInstances
+      RankNTypes
   build-depends:
       base >=4.7 && <5
     , containers
     , either
+    , fused-effects >=1.1.2.0
     , megaparsec
     , mtl
     , neat-interpolation
@@ -79,11 +91,19 @@ executable yacll-exe
       OverloadedStrings
       Strict
       StrictData
+      FlexibleInstances
+      GeneralizedNewtypeDeriving
+      MultiParamTypeClasses
+      TypeApplications
+      TypeOperators
+      UndecidableInstances
+      RankNTypes
   ghc-options: -Werror -Wall -Wincomplete-uni-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , containers
     , either
+    , fused-effects >=1.1.2.0
     , megaparsec
     , mtl
     , neat-interpolation
@@ -114,11 +134,19 @@ test-suite yacll-test
       OverloadedStrings
       Strict
       StrictData
+      FlexibleInstances
+      GeneralizedNewtypeDeriving
+      MultiParamTypeClasses
+      TypeApplications
+      TypeOperators
+      UndecidableInstances
+      RankNTypes
   ghc-options: -Wall -Wincomplete-uni-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , containers
     , either
+    , fused-effects >=1.1.2.0
     , megaparsec
     , mtl
     , neat-interpolation

@@ -1,5 +1,6 @@
 module Irs.X86Var where
 
+import Ast.Ast (defaultInfo)
 import qualified Ast.Ast as Ast
 import qualified Data.Text as T
 
@@ -23,10 +24,10 @@ data Instr
 data X86Var = X86Var Ast.Info [Instr]
 
 fromAst :: Ast.Program -> Either T.Text X86Var
-fromAst (Ast.Program info stmt) =
+fromAst (Ast.Program stmt) =
   do
     instrs <- fmap concat (mapM fromStmtToInstrs stmt)
-    pure (X86Var info instrs)
+    pure (X86Var defaultInfo instrs)
 
 fromStmtToInstrs :: Ast.Stmt -> Either T.Text [Instr]
 fromStmtToInstrs (Ast.Let binding (Ast.Const num)) =
