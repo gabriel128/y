@@ -19,7 +19,7 @@ import Control.Carrier.Error.Either
 import Control.Carrier.Fresh.Strict
 import Control.Carrier.State.Strict
 import Data.Foldable
-import Data.Text (Text, pack)
+import Data.Text (Text)
 import qualified Irs.PassEffs as PassEffs
 import Utils
 
@@ -42,15 +42,8 @@ removeComplexStmt :: Stmt -> PassEffs.StErrRnd sig m [Stmt]
 removeComplexStmt (Let binding expr) = do
   (stmts, lastExpr) <- removeComplexExp expr
   pure (stmts ++ [Let binding lastExpr])
-removeComplexStmt _ = throwError (pack "Stmt not handled")
+removeComplexStmt other = pure [other]
 
--- -- (BinOp Add (Const 10) (UnaryOp Neg (Const 8))
--- -- ->
--- -- ([Let var (UnaryOp Neg (Const 8))], (BinOp Add (Const 10) (Var var1)))
-
--- -- (UnaryOp Neg (UnaryOp Neg (Const 8)))
--- -- ->
--- -- [Let var (UnaryOp Neg (Const 8))], UnaryOp Neg (Var var1)]
 removeComplexExp :: Expr -> PassEffs.StErrRnd sig m ([Stmt], Expr)
 removeComplexExp expr | isReduced expr = pure ([], expr)
 removeComplexExp (UnaryOp op expr) = createSingleVar expr (UnaryOp op)
@@ -58,7 +51,7 @@ removeComplexExp (BinOp op exprL exprR)
   | isAtomic exprL = createSingleVar exprR (BinOp op exprL)
   | isAtomic exprR = createSingleVar exprL $ flip (BinOp op) exprR
   | otherwise = createDoubleVar exprL exprR (BinOp op)
-removeComplexExp expr = throwError (pack $ "Unhandled expression" <> show expr)
+removeComplexExp expr = pure ([], expr)
 
 createSingleVar :: Expr -> (Expr -> Expr) -> PassEffs.StErrRnd sig m ([Stmt], Expr)
 createSingleVar expr expConstr = do
@@ -77,18 +70,13 @@ createDoubleVar exprL exprR expConstr = do
   modify (addLocal varNameR)
   pure (stmtsL ++ [Let varNameL exprL'] ++ stmtsR ++ [Let varNameR exprR'], expConstr (Var varNameL) (Var varNameR))
 
+isReduced :: Expr -> Bool
+isReduced expr | isAtomic expr = True
+isReduced (BinOp _ expr1 expr2) = isAtomic expr1 && isAtomic expr2
+isReduced (UnaryOp _ expr) = isAtomic expr
+isReduced _ = False
+
 isAtomic :: Expr -> Bool
 isAtomic (Const _) = True
 isAtomic (Var _) = True
 isAtomic _ = False
-
-isReduced :: Expr -> Bool
-isReduced (Const _) = True
-isReduced (Var _) = True
-isReduced (BinOp _ (Const _) (Const _)) = True
-isReduced (BinOp _ (Var _) (Const _)) = True
-isReduced (BinOp _ (Const _) (Var _)) = True
-isReduced (BinOp _ (Var _) (Var _)) = True
-isReduced (UnaryOp _ (Const _)) = True
-isReduced (UnaryOp _ (Var _)) = True
-isReduced _ = False

@@ -27,7 +27,6 @@ library
   exposed-modules:
       Ast.Ast
       Ast.Examples
-      Defs
       Experiments
       Interpreter.Eval
       Irs.Atomize

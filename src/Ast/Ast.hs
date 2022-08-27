@@ -16,7 +16,7 @@ data BinOp
 
 data Expr
   = Const Int
-  | ExprCall Func
+  | Fn Func
   | UnaryOp UnaryOp Expr
   | BinOp BinOp Expr Expr
   | Var T.Text
