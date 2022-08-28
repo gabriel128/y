@@ -1,21 +1,15 @@
 module Lib where
 
-import Ast.Ast
-import Control.Algebra
--- import Control.Monad.Error.Class (liftEither)
--- import Control.Monad.Except (MonadError)
--- import Control.Monad.Reader
-
-import Control.Carrier.Error.Either
-import Control.Carrier.Fresh.Strict
-import Control.Carrier.Lift
-import Control.Carrier.State.Strict (runState)
-import Control.Effect.Error
-import Control.Effect.State as S
-import Data.Text (Text)
-import qualified Data.Text as T
-import qualified Irs.Atomize as Atomize
-import qualified Irs.X86Var as X86Var
+-- import Control.Carrier.Error.Either
+-- import Control.Carrier.Fresh.Strict
+-- import Control.Carrier.Lift
+-- import Control.Carrier.State.Strict (runState)
+-- import Control.Effect.Error
+-- import Control.Effect.State as S
+-- import Data.Text (Text)
+-- import qualified Data.Text as T
+-- import qualified Irs.Atomize as Atomize
+-- import qualified Irs.X86Var as X86Var
 
 --  Example of fused effects usage
 -- data Context = Context {getA :: Int, getB :: Text} deriving (Show)

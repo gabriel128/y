@@ -1,10 +1,14 @@
 import AtomizeTests
 import InterpreterTests
 import ParserTests (test_parser)
+import Test.DocTest (mainFromCabal)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 
 main :: IO ()
-main = defaultMain tests
+main = do
+  mainFromCabal "yacll" []
+  -- doctests
+  defaultMain tests
 
 tests :: TestTree
 tests =

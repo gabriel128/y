@@ -32,11 +32,13 @@ library
       Irs.Atomize
       Irs.Atomizebk
       Irs.Irs
-      Irs.Nasm
       Irs.PassEffs
       Irs.X86
       Irs.X86Var
       Lib
+      Nasm.Data
+      Nasm.Dsl
+      Nasm.Lib
       Parser.Parser
       Utils
   other-modules:
@@ -144,6 +146,7 @@ test-suite yacll-test
   build-depends:
       base >=4.7 && <5
     , containers
+    , doctest-parallel
     , either
     , fused-effects >=1.1.2.0
     , megaparsec

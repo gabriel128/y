@@ -64,6 +64,7 @@ tests:
     dependencies:
     - yacll
     - tasty
+    - doctest-parallel
     - tasty-hunit
     - tasty-smallcheck
 
