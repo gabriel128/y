@@ -5,8 +5,8 @@ module AtomizeTests (test_id_ir) where
 
 import Ast.Ast
 import Data.Either.Combinators
-import Irs.Atomize
-import Irs.PassEffs
+import Passes.AtomizeAst
+import Passes.PassEffs
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
 

@@ -29,14 +29,14 @@ library
       Ast.Examples
       Experiments
       Interpreter.Eval
-      Irs.Atomize
-      Irs.PassEffs
-      Irs.StmtsToX86
-      Irs.X86ToTextProg
       Lib
       Nasm.Data
       Nasm.Dsl
       Parser.Parser
+      Passes.AtomizeAst
+      Passes.PassEffs
+      Passes.StmtsToX86
+      Passes.X86ToTextProg
       Utils
   other-modules:
       Paths_yacll
