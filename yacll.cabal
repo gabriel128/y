@@ -30,15 +30,12 @@ library
       Experiments
       Interpreter.Eval
       Irs.Atomize
-      Irs.Atomizebk
-      Irs.Irs
       Irs.PassEffs
-      Irs.X86
-      Irs.X86Var
+      Irs.StmtsToX86
+      Irs.X86ToTextProg
       Lib
       Nasm.Data
       Nasm.Dsl
-      Nasm.Lib
       Parser.Parser
       Utils
   other-modules:

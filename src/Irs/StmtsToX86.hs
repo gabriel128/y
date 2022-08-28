@@ -1,9 +1,8 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
-{-# HLINT ignore "Use newtype instead of data" #-}
-
 -- | Represents type checked X86 in NASM format
-module Irs.X86 where
+module Irs.StmtsToX86 where
 
 import Ast.Ast
 import qualified Ast.Ast as Ast
@@ -12,20 +11,30 @@ import qualified Ast.Ast as Ast
 import Control.Carrier.Error.Either
 import Control.Carrier.State.Strict
 import Data.Either.Combinators (maybeToRight)
+import Data.List (foldl')
 import qualified Data.Map as M
 import Data.Text (Text, pack)
+import qualified Irs.PassEffs as PassEffs
 import Nasm.Data
+import qualified Nasm.Data as Nasm
 import Nasm.Dsl
 
--- data X86Program = X86Program Ast.Info [Instr]
-
 type LocalStackMap = M.Map Text MemDeref
+
+astToNasm :: Program -> PassEffs.StErr sig m [Nasm.Instr]
+astToNasm prog = do
+  localVars <- gets @Info infoLocals
+  let (stackOffset, stackVars) = mapVarsToStack localVars
+  -- TODO: Adjust stackoffset to be aligned
+  put (Info localVars stackOffset)
+  (_, instrs) <- runState @LocalStackMap stackVars $ fromStmtsToInstrs (progStmts prog)
+  pure instrs
 
 lookupEither :: Text -> LocalStackMap -> Either Text MemDeref
 lookupEither binding mapping = maybeToRight ("Local not mapped: " <> binding) (M.lookup binding mapping)
 
-mapLocalsToStack :: [Text] -> (Offset, LocalStackMap)
-mapLocalsToStack = foldr reducer (0, M.empty)
+mapVarsToStack :: [Text] -> (Offset, LocalStackMap)
+mapVarsToStack = foldr reducer (0, M.empty)
   where
     reducer :: Text -> (Offset, LocalStackMap) -> (Offset, LocalStackMap)
     reducer local (n, amap) =
@@ -35,11 +44,24 @@ mapLocalsToStack = foldr reducer (0, M.empty)
 getStackMapping :: (Has (State LocalStackMap) sig m, (Has (Throw Text) sig m)) => Text -> m MemDeref
 getStackMapping binding = gets (lookupEither binding) >>= liftEither >>= pure
 
+fromStmtsToInstrs :: (Has (State LocalStackMap) sig m, (Has (Throw Text) sig m)) => [Stmt] -> m [Instr]
+fromStmtsToInstrs = foldl' reducer (pure [])
+  where
+    reducer instrs stmt = do
+      prevInstrs <- instrs
+      newInstrs <- fromStmtToInstrs stmt
+      pure $ prevInstrs ++ newInstrs
+
 fromStmtToInstrs :: (Has (State LocalStackMap) sig m, (Has (Throw Text) sig m)) => Stmt -> m [Instr]
 -- x = 3;
 fromStmtToInstrs (Let binding (Const num)) = do
   x <- getStackMapping binding
   pure [movmi x num]
+-- x = y; -> mov rax y; mov x rax
+fromStmtToInstrs (Let binding (Var binding2)) = do
+  x <- getStackMapping binding
+  y <- getStackMapping binding2
+  pure [movrm Rax y, movmr x Rax]
 -- return 4;
 fromStmtToInstrs (Return (Const num)) =
   pure [movri Rax num, ret]
