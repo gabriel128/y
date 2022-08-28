@@ -13,11 +13,22 @@ import Nasm.Data
 -- "mov rbp,rsp"
 -- >>> textPrint $ movrm Rbp (deref R10 4)
 -- "mov rbp,[r10+4]"
+-- >>> textPrint $ movmi (deref R10 4) 3
+-- "mov [r10+4],3"
 movrr :: Reg -> Reg -> Instr
 movrr r1 r2 = Mov (RR r1 r2)
 
 movrm :: Reg -> MemDeref -> Instr
 movrm r1 mem = Mov (RM r1 mem)
+
+movmr :: MemDeref -> Reg -> Instr
+movmr mem r = Mov (MR mem r)
+
+movmi :: MemDeref -> Int -> Instr
+movmi mem imm = Mov (MI mem (Imm imm))
+
+movri :: Reg -> Int -> Instr
+movri r imm = Mov (RI r (Imm imm))
 
 -- | Sub Examples
 -- >>> textPrint $ subri Rsp 16
@@ -26,6 +37,9 @@ movrm r1 mem = Mov (RM r1 mem)
 -- "sub [rbp],3"
 subri :: Reg -> Int -> Instr
 subri r imm = Sub (RI r (Imm imm))
+
+subrm :: Reg -> MemDeref -> Instr
+subrm r mem = Sub (RM r mem)
 
 submi :: MemDeref -> Int -> Instr
 submi mem imm = Sub (MI mem (Imm imm))
@@ -37,6 +51,9 @@ submi mem imm = Sub (MI mem (Imm imm))
 -- "add [rbp+8],3"
 addri :: Reg -> Int -> Instr
 addri r imm = Add (RI r (Imm imm))
+
+addrm :: Reg -> MemDeref -> Instr
+addrm r mem = Add (RM r mem)
 
 addmi :: MemDeref -> Int -> Instr
 addmi mem imm = Add (MI mem (Imm imm))
