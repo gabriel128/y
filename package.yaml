@@ -28,6 +28,7 @@ dependencies:
 - random
 - megaparsec
 - neat-interpolation
+- fused-effects >= 1.1.2.0
 
 library:
   source-dirs:
@@ -63,6 +64,7 @@ tests:
     dependencies:
     - yacll
     - tasty
+    - doctest-parallel
     - tasty-hunit
     - tasty-smallcheck
 
@@ -78,3 +80,10 @@ default-extensions:
   - OverloadedStrings
   - Strict
   - StrictData
+  - FlexibleInstances
+  - GeneralizedNewtypeDeriving
+  - MultiParamTypeClasses
+  - TypeApplications
+  - TypeOperators
+  - UndecidableInstances
+  - RankNTypes

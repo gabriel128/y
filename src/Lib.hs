@@ -1,13 +1,18 @@
 module Lib where
 
-import Ast.Ast
+import Ast.Ast (Info, Program, defaultInfo)
 import Data.Text (Text)
-import qualified Irs.Atomize as Atomize
-import qualified Irs.X86Var as X86Var
+import Passes.AtomizeAst (removeComplexStmts)
+import Passes.PassEffs (runStErr)
+import qualified Passes.PassEffs as PassEffs
+import Passes.StmtsToX86 (astToNasm)
+import Passes.X86ToTextProg (instrsToText)
 
-compile :: Program -> Either Text Text
-compile (Program info stmts) =
-  do
-    let atomized = Atomize.removeComplexStmts makeDefaultInfo stmts
-    x86Var <- X86Var.fromAst atomized
-    pure ""
+compile :: Program -> Either Text (Info, Text)
+compile prog = runStErr defaultInfo (passes prog)
+
+passes :: Program -> PassEffs.StErr sig m Text
+passes prog = do
+  prog' <- removeComplexStmts prog
+  nasmInstrs <- astToNasm prog'
+  instrsToText nasmInstrs

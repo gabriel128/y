@@ -45,4 +45,4 @@ interpStmts = foldM go emptyStmtResult
     go res _ = Right res
 
 interpProg :: Program -> T.Text
-interpProg (Program _ stmts) = either id (maybe "Empty" (T.pack . show) . getResult) (interpStmts stmts)
+interpProg (Program stmts) = either id (maybe "Empty" (T.pack . show) . getResult) (interpStmts stmts)
