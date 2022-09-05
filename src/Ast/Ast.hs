@@ -12,6 +12,8 @@ data UnaryOp
 data BinOp
   = Add
   | Sub
+  | Mul
+  | Div
   deriving (Eq, Show)
 
 data Expr
