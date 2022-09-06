@@ -25,13 +25,15 @@ astToNasm :: Program -> PassEffs.StErr sig m [Nasm.Instr]
 astToNasm prog = do
   localVars <- gets @Info infoLocals
   let (stackOffset, stackVars) = mapVarsToStack localVars
-  -- TODO: Adjust stackoffset to be aligned
-  put (Info localVars stackOffset)
+  put (Info localVars (alignStack16 stackOffset))
   (_, instrs) <- runState @LocalStackMap stackVars $ fromStmtsToInstrs (progStmts prog)
   pure instrs
 
+alignStack16 :: Int -> Int
+alignStack16 offset = offset - (offset `mod` 16)
+
 lookupEither :: Text -> LocalStackMap -> Either Text MemDeref
-lookupEither binding mapping = maybeToRight ("Local not mapped: " <> binding <> pack (show mapping)) (M.lookup binding mapping)
+lookupEither binding mapping = maybeToRight ("Var not bound: " <> binding) (M.lookup binding mapping)
 
 mapVarsToStack :: [Text] -> (Offset, LocalStackMap)
 mapVarsToStack = foldr reducer (0, M.empty)
