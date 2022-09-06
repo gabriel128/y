@@ -31,7 +31,7 @@ astToNasm prog = do
   pure instrs
 
 lookupEither :: Text -> LocalStackMap -> Either Text MemDeref
-lookupEither binding mapping = maybeToRight ("Local not mapped: " <> binding) (M.lookup binding mapping)
+lookupEither binding mapping = maybeToRight ("Local not mapped: " <> binding <> pack (show mapping)) (M.lookup binding mapping)
 
 mapVarsToStack :: [Text] -> (Offset, LocalStackMap)
 mapVarsToStack = foldr reducer (0, M.empty)

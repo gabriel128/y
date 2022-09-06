@@ -41,6 +41,7 @@ removeComplexStmts (Program stmts) = fmap snd $
 removeComplexStmt :: Stmt -> PassEffs.StErrRnd sig m [Stmt]
 removeComplexStmt (Let binding expr) = do
   (stmts, lastExpr) <- removeComplexExp expr
+  modify (addLocal binding)
   pure (stmts ++ [Let binding lastExpr])
 removeComplexStmt other = pure [other]
 

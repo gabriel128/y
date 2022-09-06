@@ -12,7 +12,7 @@ newtype Imm = Imm Int deriving (Eq)
 data NasmError = InvalidAsm Text | GeneralError Text deriving (Show)
 
 -- A memory address (e.g., [eax], [var + 4], or dword ptr [eax+ebx])
-data MemDeref = MemDeref Reg Offset deriving (Eq)
+data MemDeref = MemDeref Reg Offset deriving (Eq, Show)
 
 -- lea edi, [ebx+4*esi] — the quantity EBX+4*ESI is placed in EDI.
 -- lea eax, [var] — the value in var is placed in EAX.
@@ -79,7 +79,7 @@ instance Print Imm where
 
 instance Print BinaryArgs where
   textPrint (RR reg1 reg2) = textPrint reg1 <> "," <> textPrint reg2
-  textPrint (MR r mem) = textPrint r <> "," <> textPrint mem
+  textPrint (MR r mem) = "qword " <> textPrint r <> "," <> textPrint mem
   textPrint (RM mem r) = textPrint mem <> "," <> textPrint r
   textPrint (RI r imm) = textPrint r <> "," <> textPrint imm
-  textPrint (MI mem imm) = textPrint mem <> "," <> textPrint imm
+  textPrint (MI mem imm) = "qword " <> textPrint mem <> "," <> textPrint imm
