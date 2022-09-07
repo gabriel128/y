@@ -27,6 +27,7 @@ data BinaryArgs
   | RM Reg MemDeref
   | RI Reg Imm
   | MI MemDeref Imm
+  | RL Reg Label
   deriving (Eq)
 
 data Reg = Rsp | Rbp | Rax | Rbx | Rcx | Rdx | Rsi | Rdi | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15
@@ -39,6 +40,7 @@ data Instr
   | Sub BinaryArgs
   | Neg RMArg
   | Mov BinaryArgs
+  | Xor BinaryArgs
   | Call Label
   | Push Arg
   | Pop Arg
@@ -56,6 +58,7 @@ instance Print Instr where
   textPrint (Call label) = "call " <> label
   textPrint (Push mode) = "push " <> textPrint mode
   textPrint (Pop mode) = "pop " <> textPrint mode
+  textPrint (Xor mode) = "xor " <> textPrint mode
   textPrint Ret = "ret"
   textPrint (Jmp label) = pack $ "jmp " <> show label
 
@@ -82,4 +85,5 @@ instance Print BinaryArgs where
   textPrint (MR r mem) = "qword " <> textPrint r <> "," <> textPrint mem
   textPrint (RM mem r) = textPrint mem <> "," <> textPrint r
   textPrint (RI r imm) = textPrint r <> "," <> textPrint imm
+  textPrint (RL r text) = textPrint r <> "," <> text
   textPrint (MI mem imm) = "qword " <> textPrint mem <> "," <> textPrint imm

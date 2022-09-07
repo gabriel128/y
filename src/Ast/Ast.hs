@@ -26,6 +26,7 @@ data Expr
 
 data Stmt
   = Let T.Text Expr
+  | Print Expr
   | Return Expr
   deriving (Eq, Show)
 

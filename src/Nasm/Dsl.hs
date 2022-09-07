@@ -14,9 +14,14 @@ import Nasm.Data
 -- >>> textPrint $ movrm Rbp (deref R10 4)
 -- "mov rbp,[r10+4]"
 -- >>> textPrint $ movmi (deref R10 4) 3
--- "mov [r10+4],3"
+-- "mov qword [r10+4],3"
+-- >>> textPrint $ movrl Rax "blah"
+-- "mov rax,blah"
 movrr :: Reg -> Reg -> Instr
 movrr r1 r2 = Mov (RR r1 r2)
+
+movrl :: Reg -> Label -> Instr
+movrl r1 label = Mov (RL r1 label)
 
 movrm :: Reg -> MemDeref -> Instr
 movrm r1 mem = Mov (RM r1 mem)
@@ -34,7 +39,7 @@ movri r imm = Mov (RI r (Imm imm))
 -- >>> textPrint $ subri Rsp 16
 -- "sub rsp,16"
 -- >>> textPrint $ submi (deref Rbp 0) 3
--- "sub [rbp],3"
+-- "sub qword [rbp],3"
 subri :: Reg -> Int -> Instr
 subri r imm = Sub (RI r (Imm imm))
 
@@ -48,7 +53,7 @@ submi mem imm = Sub (MI mem (Imm imm))
 -- >>> textPrint $ addri Rsp 16
 -- "add rsp,16"
 -- >>> textPrint $ addmi (deref Rbp 8) 3
--- "add [rbp+8],3"
+-- "add qword [rbp+8],3"
 addri :: Reg -> Int -> Instr
 addri r imm = Add (RI r (Imm imm))
 
@@ -100,6 +105,12 @@ popr r = Pop (ArgR r)
 
 popm :: MemDeref -> Instr
 popm mem = Pop (ArgM mem)
+
+xor :: Reg -> Reg -> Instr
+xor r1 r2 = Xor (RR r1 r2)
+
+call :: Text -> Instr
+call = Call
 
 ret :: Instr
 ret = Ret

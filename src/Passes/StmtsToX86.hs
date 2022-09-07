@@ -70,6 +70,13 @@ fromStmtToInstrs (Return (Const num)) =
 -- return x;
 fromStmtToInstrs (Return (Var binding)) =
   getStackMapping binding >>= (\x -> pure [movrm Rax x, ret])
+-- print 3
+fromStmtToInstrs (Print (Const num)) =
+  pure [movrl Rdi "printf_format", movri Rsi num, xor Rax Rax, call "printf WRT ..plt"]
+-- print x
+fromStmtToInstrs (Print (Var binding)) =
+  getStackMapping binding >>=
+  (\x -> pure [movrl Rdi "printf_format", movrm Rsi x, xor Rax Rax, call "printf WRT ..plt"])
 -- Handle addition
 -- x = 2 + 2; -> mov x, 2; add x, 2
 fromStmtToInstrs (Let binding (BinOp Ast.Add (Const num1) (Const num2))) = do

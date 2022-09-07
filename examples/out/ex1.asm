@@ -1,4 +1,10 @@
+extern printf
+
 global main
+
+section .data
+  printf_format: db '%d',10,0
+
 section .text
 
 main:
@@ -9,9 +15,18 @@ main:
     call conclusion
 
 start:
-  mov qword [rbp-24],3 
-  mov qword [rbp-16],3 
-  mov qword [rbp-8],6 
+  mov qword [rbp-32],3 
+  mov qword [rbp-24],2 
+  mov rax,[rbp-24] 
+  sub rax,9 
+  mov qword [rbp-16],rax 
+  mov rax,[rbp-16] 
+  add rax,[rbp-32] 
+  mov qword [rbp-8],rax 
+  mov rdi,printf_format 
+  mov rsi,[rbp-8] 
+  xor rax,rax 
+  call printf WRT ..plt 
   mov rax,[rbp-8] 
   ret
 

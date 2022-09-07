@@ -1,4 +1,7 @@
 let x = 3;
-let y = 3;
-let z = (x + y);
+let y = 2;
+let z = (x + (y - 9));
+
+print(z);
+
 return z;

@@ -30,6 +30,7 @@ dependencies:
 - neat-interpolation
 - fused-effects >= 1.1.2.0
 - parser-combinators
+- process
 
 library:
   source-dirs:
@@ -57,8 +58,8 @@ tests:
     main:                TestLoader.hs
     source-dirs:         test
     ghc-options:
-    - -Wall
-    - -Wincomplete-uni-patterns
+    # - -Wall
+    # - -Wincomplete-uni-patterns
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N

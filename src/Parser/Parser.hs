@@ -24,7 +24,7 @@ parseProgram = do
   return (Ast.Program stmts)
 
 parseStmt :: Parser Ast.Stmt
-parseStmt = choice [parseLet, parseReturn]
+parseStmt = choice [parseLet, parsePrint, parseReturn]
 
 -- let x = 3 + 3;
 parseLet :: Parser Ast.Stmt
@@ -47,6 +47,14 @@ parseReturn = label "return" . lexeme $
     expr <- parseExpr
     void (symbol ";")
     return (Ast.Return expr)
+
+parsePrint :: Parser Ast.Stmt
+parsePrint = label "print" . lexeme $
+  do
+    void (string "print")
+    expr <- parens parseExpr
+    void (symbol ";")
+    return (Ast.Print expr)
 
 --- | Exprs
 parseTerm :: Parser Ast.Expr

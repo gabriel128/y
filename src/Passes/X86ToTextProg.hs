@@ -25,7 +25,14 @@ programTemplate :: Text -> Int -> Text
 programTemplate logic stackOffset =
   let offset = pack $ show stackOffset
    in [trimming|
+
+      extern printf
+
       global main
+
+      section .data
+        printf_format: db '%d',10,0
+
       section .text
 
       main:

@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
+{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 
 module AtomizeTests (test_id_ir) where
 
@@ -29,17 +30,17 @@ unitTests =
   testGroup
     "ListStack"
     [ testCase "remove complex ops do nothing when not needed" $
-        let (Info [] 0, prog) = runComplexStmts [Let "x" (Const 8)]
+        let (Info ["x"] 0, prog) = runComplexStmts [Let "x" (Const 8)]
             expected = Program [Let "x" (Const 8)]
          in assertEqual "" prog expected,
       --
       testCase "remove complex ops do nothing with more complex ops but still atomic" $
-        let (Info [] 0, prog) = runComplexStmts [Let "x" (UnaryOp Neg (Const 8))]
+        let (Info ["x"] 0, prog) = runComplexStmts [Let "x" (UnaryOp Neg (Const 8))]
             expected = newProgram [Let "x" (UnaryOp Neg (Const 8))]
          in assertEqual "" prog expected,
       -- --
       testCase "remove complex ops on Unary" $
-        let (Info [var'] 0, prog) = runComplexStmts [Let "x" (UnaryOp Neg (UnaryOp Neg (Const 8)))]
+        let (Info [var', "x"] 0, prog) = runComplexStmts [Let "x" (UnaryOp Neg (UnaryOp Neg (Const 8)))]
          in case prog of
               Program
                 [ Let var (UnaryOp Neg (Const 8)),
@@ -49,7 +50,7 @@ unitTests =
       -- --
       testCase "multiple stmts remove complex ops with Unary" $
         let stmts = [Let "x" (UnaryOp Neg (UnaryOp Neg (Const 8))), Let "y" (UnaryOp Neg (UnaryOp Neg (Const 8)))]
-            (Info [var, var1] 0, prog) = runComplexStmts stmts
+            (Info [var, "x", var1, "y"] 0, prog) = runComplexStmts stmts
          in case prog of
               Program
                 [ Let var' (UnaryOp Neg (Const 8)),
@@ -73,7 +74,7 @@ unitTests =
       -- -- --
       testCase "remove complex ops on Binary ops" $
         let stmts = [Let "x" (BinOp Add (Const 10) (UnaryOp Neg (Const 8)))]
-            (Info [lvar] 0, atomStmts) = runComplexStmts $ stmts
+            (Info [lvar, "x"] 0, atomStmts) = runComplexStmts $ stmts
          in case progStmts atomStmts of
               [Let var (UnaryOp Neg (Const 8)), Let "x" (BinOp Add (Const 10) (Var var1))] ->
                 assertBool "tmp vars are not equal" (var == var1 && var == lvar)
@@ -82,7 +83,7 @@ unitTests =
       -- -- --
       testCase "remove more complex ops on Binary ops" $
         let stmts = [Let "x" (BinOp Add (UnaryOp Neg (Const 8)) (Const 10))]
-            (Info [lvar] 0, atomStmts) = runComplexStmts $ stmts
+            (Info [lvar, "x"] 0, atomStmts) = runComplexStmts $ stmts
          in case progStmts atomStmts of
               [Let var (UnaryOp Neg (Const 8)), Let "x" (BinOp Add (Var var1) (Const 10))] ->
                 assertBool "tmp vars are not equal" (var == var1 && lvar == var)
@@ -91,7 +92,7 @@ unitTests =
       -- -- --
       testCase "remove even more complex ops on Binary ops" $
         let stmts = [Let "x" (BinOp Add (UnaryOp Neg (Const 8)) (UnaryOp Neg (Const 10)))]
-            (Info [lvar, lvar1] 0, atomStmts) = runComplexStmts $ stmts
+            (Info [lvar, lvar1, "x"] 0, atomStmts) = runComplexStmts $ stmts
          in case progStmts atomStmts of
               res@[Let var (UnaryOp Neg (Const 8)), Let var1 (UnaryOp Neg (Const 10)), Let "x" (BinOp Add (Var var') (Var var1'))] -> do
                 assertBool ("tmp vars are not equal, got" <> show res) (var == var' && var1 == var1' && var == lvar && var1 == lvar1)
