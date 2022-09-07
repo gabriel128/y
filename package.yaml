@@ -58,8 +58,8 @@ tests:
     main:                TestLoader.hs
     source-dirs:         test
     ghc-options:
-    # - -Wall
-    # - -Wincomplete-uni-patterns
+    - -Wall
+    - -Wincomplete-uni-patterns
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
