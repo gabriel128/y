@@ -31,6 +31,7 @@ dependencies:
 - fused-effects >= 1.1.2.0
 - parser-combinators
 - process
+- cmdargs
 
 library:
   source-dirs:

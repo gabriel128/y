@@ -1,5 +1,5 @@
 let x = 3;
-let y = 2;
+let y = 7;
 let z = (x + (y - 9));
 
 print(z);

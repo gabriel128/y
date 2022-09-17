@@ -64,6 +64,7 @@ library
       RankNTypes
   build-depends:
       base >=4.7 && <5
+    , cmdargs
     , containers
     , either
     , fused-effects >=1.1.2.0
@@ -102,6 +103,7 @@ executable yacll-exe
   ghc-options: -Werror -Wall -Wincomplete-uni-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , cmdargs
     , containers
     , either
     , fused-effects >=1.1.2.0
@@ -144,9 +146,10 @@ test-suite yacll-test
       TypeOperators
       UndecidableInstances
       RankNTypes
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Wincomplete-uni-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , cmdargs
     , containers
     , doctest-parallel
     , either
