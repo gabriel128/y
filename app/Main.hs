@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
@@ -8,26 +7,25 @@ module Main where
 -- import System.Console.CmdArgs
 
 import Control.Arrow (left)
-import Control.Monad.Except (MonadError, MonadIO, liftEither, runExceptT)
 import Data.Text (pack, unpack)
 import Lib
 import LocalMtl
 
-main :: (MonadIO m, MonadPrinter m) => m ()
+main :: (MonadTIO m, MonadPrinter m) => m ()
 main = do
   let file = "./examples/ex1.yacll"
   let outFile = "./examples/out/ex1"
-  res <- runExceptT $ runCompiler file outFile
+  res <- runEitherT $ runCompiler file outFile
   case res of
     Right _ -> printLn "Compilation successful"
     Left err -> printLn err
 
 runCompiler ::
-  ( MonadIO m,
-    MonadProcess m,
+  ( MonadProcess m,
+    MonadTIO m,
     MonadPrinter m,
     MonadFiles m,
-    MonadError String m
+    MonadEither String m
   ) =>
   String ->
   String ->
@@ -37,6 +35,7 @@ runCompiler yacllFile outFile = do
   let objFile = outFile <> ".o"
   contents <- readFromFile yacllFile
 
+  liftTIO $ putStrLn "blah"
   -- Compile!
   (_info, asmOutput) <- liftEither . left unpack $ parseAndCompile (pack contents)
   writeToFile asmFile (unpack asmOutput)
