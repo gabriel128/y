@@ -1,15 +1,9 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MonoLocalBinds #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 module Main where
-
--- import System.Console.CmdArgs
-
--- import System.Console.CmdArgs
--- import System.Console.CmdArgs
 
 -- import System.Console.CmdArgs
 
@@ -17,7 +11,7 @@ import Control.Arrow (left)
 import Control.Monad.Except (MonadError, MonadIO, liftEither, runExceptT)
 import Data.Text (pack, unpack)
 import Lib
-import Mtl
+import LocalMtl
 
 main :: (MonadIO m, MonadPrinter m) => m ()
 main = do
@@ -25,10 +19,19 @@ main = do
   let outFile = "./examples/out/ex1"
   res <- runExceptT $ runCompiler file outFile
   case res of
-    Right _ -> printf "Compilation successful"
-    Left err -> printf err
+    Right _ -> printLn "Compilation successful"
+    Left err -> printLn err
 
-runCompiler :: (MonadIO m, MonadProcess m, MonadPrinter m, MonadFiles m, MonadError String m) => String -> String -> m ()
+runCompiler ::
+  ( MonadIO m,
+    MonadProcess m,
+    MonadPrinter m,
+    MonadFiles m,
+    MonadError String m
+  ) =>
+  String ->
+  String ->
+  m ()
 runCompiler yacllFile outFile = do
   let asmFile = outFile <> ".asm"
   let objFile = outFile <> ".o"
@@ -38,14 +41,14 @@ runCompiler yacllFile outFile = do
   (_info, asmOutput) <- liftEither . left unpack $ parseAndCompile (pack contents)
   writeToFile asmFile (unpack asmOutput)
 
-  printf "Compiling asm..."
+  printLn "Compiling asm..."
   out <- readFromProcess "nasm" ["-f", "elf64", asmFile] []
 
-  printf $ "Asm Finished " <> out
-  printf "Linking..."
+  printLn $ "Asm Finished " <> out
+  printLn "Linking..."
 
   lOut <- readFromProcess "gcc" [objFile, "-no-pie", "-z", "noexecstack", "-o", outFile] []
-  printf $ "Linking Finished" <> lOut
+  printLn $ "Linking Finished" <> lOut
 
 replaceYacllExt :: String -> String -> Either String String
 replaceYacllExt yacllFile newExt = go . reverse $ yacllFile

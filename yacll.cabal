@@ -30,7 +30,7 @@ library
       Experiments
       Interpreter.Eval
       Lib
-      Mtl
+      LocalMtl
       Nasm.Data
       Nasm.Dsl
       Parser.Defs
