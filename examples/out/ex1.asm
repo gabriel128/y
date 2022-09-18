@@ -15,7 +15,7 @@ main:
     call conclusion
 
 start:
-  mov qword [rbp-32],3 
+  mov qword [rbp-32],9 
   mov qword [rbp-24],7 
   mov rax,[rbp-24] 
   sub rax,9 

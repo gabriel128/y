@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
 module Main where
@@ -13,39 +14,38 @@ module Main where
 -- import System.Console.CmdArgs
 
 import Control.Arrow (left)
-import Control.Monad.Except (ExceptT, liftEither, liftIO, runExceptT)
+import Control.Monad.Except (MonadError, MonadIO, liftEither, runExceptT)
 import Data.Text (pack, unpack)
 import Lib
-import System.Process
+import Mtl
 
-main :: IO ()
+main :: (MonadIO m, MonadPrinter m) => m ()
 main = do
   let file = "./examples/ex1.yacll"
   let outFile = "./examples/out/ex1"
   res <- runExceptT $ runCompiler file outFile
   case res of
-    Right _ -> putStrLn "Compilation successful"
-    Left err -> putStrLn err
-  pure ()
+    Right _ -> printf "Compilation successful"
+    Left err -> printf err
 
-runCompiler :: String -> String -> ExceptT String IO ()
+runCompiler :: (MonadIO m, MonadProcess m, MonadPrinter m, MonadFiles m, MonadError String m) => String -> String -> m ()
 runCompiler yacllFile outFile = do
   let asmFile = outFile <> ".asm"
   let objFile = outFile <> ".o"
-  contents <- liftIO $ readFile yacllFile
+  contents <- readFromFile yacllFile
 
   -- Compile!
   (_info, asmOutput) <- liftEither . left unpack $ parseAndCompile (pack contents)
-  liftIO $ writeFile asmFile (unpack asmOutput)
+  writeToFile asmFile (unpack asmOutput)
 
-  liftIO $ putStrLn "Compiling asm..."
-  out <- liftIO $ readProcess "nasm" ["-f", "elf64", asmFile] []
+  printf "Compiling asm..."
+  out <- readFromProcess "nasm" ["-f", "elf64", asmFile] []
 
-  liftIO $ putStrLn $ "Asm Finished " <> out
-  liftIO $ putStrLn "Linking..."
+  printf $ "Asm Finished " <> out
+  printf "Linking..."
 
-  lOut <- liftIO $ readProcess "gcc" [objFile, "-no-pie", "-z", "noexecstack", "-o", outFile] []
-  liftIO $ putStrLn $ "Linking Finished" <> lOut
+  lOut <- readFromProcess "gcc" [objFile, "-no-pie", "-z", "noexecstack", "-o", outFile] []
+  printf $ "Linking Finished" <> lOut
 
 replaceYacllExt :: String -> String -> Either String String
 replaceYacllExt yacllFile newExt = go . reverse $ yacllFile
