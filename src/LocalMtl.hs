@@ -5,13 +5,31 @@ module LocalMtl where
 
 import System.Process (readProcess)
 
----
+--- | Classes
 
 class MonadT t where
   liftT :: Monad m => m a -> t m a
 
+class Monad m => MonadTIO m where
+  liftTIO :: IO a -> m a
+
+class MonadFiles m where
+  writeToFile :: FilePath -> String -> m ()
+  readFromFile :: FilePath -> m String
+
+class MonadProcess m where
+  readFromProcess :: FilePath -> [String] -> String -> m String
+
+class MonadPrinter m where
+  printLn :: String -> m ()
+
+class Monad m => MonadEither e m | m -> e where
+  throwError :: e -> m a
+
+-- | EitherT def
 newtype EitherT e m a = EitherT {runEitherT :: m (Either e a)}
 
+-- | Instances
 instance Functor m => Functor (EitherT e m) where
   fmap f eitherTa =
     let ma = runEitherT eitherTa in EitherT $ (fmap . fmap) f ma
@@ -33,32 +51,14 @@ instance Monad m => Monad (EitherT e m) where
 instance MonadT (EitherT e) where
   liftT a = EitherT $ fmap Right a
 
-class Monad m => MonadEither e m | m -> e where
-  throwError :: e -> m a
-
 instance Monad m => MonadEither e (EitherT e m) where
   throwError err = EitherT $ pure (Left err)
-
-class Monad m => MonadTIO m where
-  liftTIO :: IO a -> m a
 
 instance MonadTIO IO where
   liftTIO = id
 
 instance MonadTIO m => MonadTIO (EitherT e m) where
   liftTIO = liftT . liftTIO
-
----
-
-class MonadFiles m where
-  writeToFile :: FilePath -> String -> m ()
-  readFromFile :: FilePath -> m String
-
-class MonadProcess m where
-  readFromProcess :: FilePath -> [String] -> String -> m String
-
-class MonadPrinter m where
-  printLn :: String -> m ()
 
 instance MonadPrinter IO where
   printLn xs = putStrLn xs
