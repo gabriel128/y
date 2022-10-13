@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -fno-cse #-}
 
@@ -10,12 +11,23 @@ import Control.Arrow (left)
 import Data.Text (pack, unpack)
 import Lib
 import LocalMtl
+import System.Console.CmdArgs
+
+data Args = Args {outputFile :: String, inputFile :: String}
+  deriving (Show, Data, Typeable)
+
+consoleArgs :: Args
+consoleArgs = Args {outputFile = def, inputFile = def}
 
 main :: (MonadTIO m, MonadPrinter m) => m ()
 main = do
-  let file = "./examples/ex1.yacll"
-  let outFile = "./examples/out/ex1"
-  res <- runEitherT $ runCompiler file outFile
+  parsedArgs <- liftTIO $ cmdArgs consoleArgs
+  printLn (show parsedArgs)
+
+  let inFile = inputFile parsedArgs
+  let outFile = outputFile parsedArgs
+
+  res <- runEitherT $ runCompiler inFile outFile
   case res of
     Right _ -> printLn "Compilation successful"
     Left err -> printLn err
