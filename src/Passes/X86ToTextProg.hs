@@ -25,19 +25,28 @@ programTemplate :: Text -> Int -> Text
 programTemplate logic stackOffset =
   let offset = pack $ show stackOffset
    in [trimming|
-        .global main
+
+      extern printf
+
+      global main
+
+      section .data
+        printf_format: db '%d',10,0
+
+      section .text
+
       main:
-          pushq   rbp
-          movq    rbp, rsp
-          subq    rsp, $offset
-          jmp start
+          push rbp
+          mov  rbp, rsp
+          add  rsp, $offset
+          call start
+          call conclusion
 
       start:
         $logic
-        jmp conclusion
 
       conclusion:
-          addq    rsp, rbp
-          popq    rbp
+          mov rsp, rbp
+          pop rbp
           ret
     |]

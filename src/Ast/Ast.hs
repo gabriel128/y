@@ -12,6 +12,8 @@ data UnaryOp
 data BinOp
   = Add
   | Sub
+  | Mul
+  | Div
   deriving (Eq, Show)
 
 data Expr
@@ -24,6 +26,7 @@ data Expr
 
 data Stmt
   = Let T.Text Expr
+  | Print Expr
   | Return Expr
   deriving (Eq, Show)
 

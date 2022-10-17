@@ -30,8 +30,10 @@ library
       Experiments
       Interpreter.Eval
       Lib
+      LocalMtl
       Nasm.Data
       Nasm.Dsl
+      Parser.Defs
       Parser.Parser
       Passes.AtomizeAst
       Passes.PassEffs
@@ -63,12 +65,15 @@ library
       RankNTypes
   build-depends:
       base >=4.7 && <5
+    , cmdargs
     , containers
     , either
     , fused-effects >=1.1.2.0
     , megaparsec
     , mtl
     , neat-interpolation
+    , parser-combinators
+    , process
     , random
     , text
   default-language: Haskell2010
@@ -99,12 +104,15 @@ executable yacll-exe
   ghc-options: -Werror -Wall -Wincomplete-uni-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , cmdargs
     , containers
     , either
     , fused-effects >=1.1.2.0
     , megaparsec
     , mtl
     , neat-interpolation
+    , parser-combinators
+    , process
     , random
     , text
     , yacll
@@ -115,6 +123,7 @@ test-suite yacll-test
   main-is: TestLoader.hs
   other-modules:
       AtomizeTests
+      FullProgramTests
       InterpreterTests
       ParserTests
       Paths_yacll
@@ -142,6 +151,7 @@ test-suite yacll-test
   ghc-options: -Wall -Wincomplete-uni-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , cmdargs
     , containers
     , doctest-parallel
     , either
@@ -149,6 +159,8 @@ test-suite yacll-test
     , megaparsec
     , mtl
     , neat-interpolation
+    , parser-combinators
+    , process
     , random
     , tasty
     , tasty-hunit

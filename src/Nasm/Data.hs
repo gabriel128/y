@@ -12,7 +12,7 @@ newtype Imm = Imm Int deriving (Eq)
 data NasmError = InvalidAsm Text | GeneralError Text deriving (Show)
 
 -- A memory address (e.g., [eax], [var + 4], or dword ptr [eax+ebx])
-data MemDeref = MemDeref Reg Offset deriving (Eq)
+data MemDeref = MemDeref Reg Offset deriving (Eq, Show)
 
 -- lea edi, [ebx+4*esi] — the quantity EBX+4*ESI is placed in EDI.
 -- lea eax, [var] — the value in var is placed in EAX.
@@ -27,6 +27,7 @@ data BinaryArgs
   | RM Reg MemDeref
   | RI Reg Imm
   | MI MemDeref Imm
+  | RL Reg Label
   deriving (Eq)
 
 data Reg = Rsp | Rbp | Rax | Rbx | Rcx | Rdx | Rsi | Rdi | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15
@@ -39,6 +40,7 @@ data Instr
   | Sub BinaryArgs
   | Neg RMArg
   | Mov BinaryArgs
+  | Xor BinaryArgs
   | Call Label
   | Push Arg
   | Pop Arg
@@ -56,6 +58,7 @@ instance Print Instr where
   textPrint (Call label) = "call " <> label
   textPrint (Push mode) = "push " <> textPrint mode
   textPrint (Pop mode) = "pop " <> textPrint mode
+  textPrint (Xor mode) = "xor " <> textPrint mode
   textPrint Ret = "ret"
   textPrint (Jmp label) = pack $ "jmp " <> show label
 
@@ -79,7 +82,8 @@ instance Print Imm where
 
 instance Print BinaryArgs where
   textPrint (RR reg1 reg2) = textPrint reg1 <> "," <> textPrint reg2
-  textPrint (MR r mem) = textPrint r <> "," <> textPrint mem
+  textPrint (MR r mem) = "qword " <> textPrint r <> "," <> textPrint mem
   textPrint (RM mem r) = textPrint mem <> "," <> textPrint r
   textPrint (RI r imm) = textPrint r <> "," <> textPrint imm
-  textPrint (MI mem imm) = textPrint mem <> "," <> textPrint imm
+  textPrint (RL r text) = textPrint r <> "," <> text
+  textPrint (MI mem imm) = "qword " <> textPrint mem <> "," <> textPrint imm

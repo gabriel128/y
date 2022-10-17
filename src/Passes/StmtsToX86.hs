@@ -25,13 +25,15 @@ astToNasm :: Program -> PassEffs.StErr sig m [Nasm.Instr]
 astToNasm prog = do
   localVars <- gets @Info infoLocals
   let (stackOffset, stackVars) = mapVarsToStack localVars
-  -- TODO: Adjust stackoffset to be aligned
-  put (Info localVars stackOffset)
+  put (Info localVars (alignStack16 stackOffset))
   (_, instrs) <- runState @LocalStackMap stackVars $ fromStmtsToInstrs (progStmts prog)
   pure instrs
 
+alignStack16 :: Int -> Int
+alignStack16 offset = offset - (offset `mod` 16)
+
 lookupEither :: Text -> LocalStackMap -> Either Text MemDeref
-lookupEither binding mapping = maybeToRight ("Local not mapped: " <> binding) (M.lookup binding mapping)
+lookupEither binding mapping = maybeToRight ("Var not bound: " <> binding) (M.lookup binding mapping)
 
 mapVarsToStack :: [Text] -> (Offset, LocalStackMap)
 mapVarsToStack = foldr reducer (0, M.empty)
@@ -68,6 +70,13 @@ fromStmtToInstrs (Return (Const num)) =
 -- return x;
 fromStmtToInstrs (Return (Var binding)) =
   getStackMapping binding >>= (\x -> pure [movrm Rax x, ret])
+-- print 3
+fromStmtToInstrs (Print (Const num)) =
+  pure [movrl Rdi "printf_format", movri Rsi num, xor Rax Rax, call "printf WRT ..plt"]
+-- print x
+fromStmtToInstrs (Print (Var binding)) =
+  getStackMapping binding >>=
+  (\x -> pure [movrl Rdi "printf_format", movrm Rsi x, xor Rax Rax, call "printf WRT ..plt"])
 -- Handle addition
 -- x = 2 + 2; -> mov x, 2; add x, 2
 fromStmtToInstrs (Let binding (BinOp Ast.Add (Const num1) (Const num2))) = do
