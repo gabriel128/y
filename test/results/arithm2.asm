@@ -15,19 +15,22 @@ main:
     call conclusion
 
 start:
-  mov qword [rbp-32],3 
-  mov qword [rbp-24],2 
+  mov qword [rbp-32],9 
+  mov qword [rbp-24],100 
   mov rax,[rbp-24] 
-  sub rax,9 
-  mov qword [rbp-16],rax 
-  mov rax,[rbp-16] 
   add rax,[rbp-32] 
-  mov qword [rbp-8],rax 
+  mov qword [rbp-16],rax 
+  mov rdi,printf_format 
+  mov rsi,[rbp-16] 
+  xor rax,rax 
+  call printf WRT ..plt 
+  mov qword [rbp-8],3 
+  add qword [rbp-8],3 
   mov rdi,printf_format 
   mov rsi,[rbp-8] 
   xor rax,rax 
   call printf WRT ..plt 
-  mov rax,[rbp-8] 
+  mov rax,0 
   ret
 
 conclusion:

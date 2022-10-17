@@ -74,16 +74,25 @@ unitTests =
       -- -- --
       testCase "remove complex ops on Binary ops" $
         let stmts = [Let "x" (BinOp Add (Const 10) (UnaryOp Neg (Const 8)))]
-            (Info [lvar, "x"] 0, atomStmts) = runComplexStmts $ stmts
+            (Info [lvar, "x"] 0, atomStmts) = runComplexStmts stmts
          in case progStmts atomStmts of
               [Let var (UnaryOp Neg (Const 8)), Let "x" (BinOp Add (Const 10) (Var var1))] ->
                 assertBool "tmp vars are not equal" (var == var1 && var == lvar)
               res ->
                 assertBool ("It didn't construct the correct tmp vars, got: " <> show res) False,
+      ------
+      testCase "remove expr on Print" $
+        let stmts = [Print (BinOp Add (Const 10) (Const 8))]
+            (Info [lvar] 0, atomStmts) = runComplexStmts stmts
+         in case progStmts atomStmts of
+              [Let lvar' (BinOp Add (Const 10) (Const 8)), Print (Var lvar'')] ->
+                assertBool "tmp vars are not equal" (lvar == lvar' && lvar' == lvar'')
+              res ->
+                assertBool ("It didn't construct the correct tmp vars, got: " <> show res) False,
       -- -- --
       testCase "remove more complex ops on Binary ops" $
         let stmts = [Let "x" (BinOp Add (UnaryOp Neg (Const 8)) (Const 10))]
-            (Info [lvar, "x"] 0, atomStmts) = runComplexStmts $ stmts
+            (Info [lvar, "x"] 0, atomStmts) = runComplexStmts stmts
          in case progStmts atomStmts of
               [Let var (UnaryOp Neg (Const 8)), Let "x" (BinOp Add (Var var1) (Const 10))] ->
                 assertBool "tmp vars are not equal" (var == var1 && lvar == var)
@@ -92,7 +101,7 @@ unitTests =
       -- -- --
       testCase "remove even more complex ops on Binary ops" $
         let stmts = [Let "x" (BinOp Add (UnaryOp Neg (Const 8)) (UnaryOp Neg (Const 10)))]
-            (Info [lvar, lvar1, "x"] 0, atomStmts) = runComplexStmts $ stmts
+            (Info [lvar, lvar1, "x"] 0, atomStmts) = runComplexStmts stmts
          in case progStmts atomStmts of
               res@[Let var (UnaryOp Neg (Const 8)), Let var1 (UnaryOp Neg (Const 10)), Let "x" (BinOp Add (Var var') (Var var1'))] -> do
                 assertBool ("tmp vars are not equal, got" <> show res) (var == var' && var1 == var1' && var == lvar && var1 == lvar1)

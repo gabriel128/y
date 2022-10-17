@@ -123,6 +123,7 @@ test-suite yacll-test
   main-is: TestLoader.hs
   other-modules:
       AtomizeTests
+      FullProgramTests
       InterpreterTests
       ParserTests
       Paths_yacll

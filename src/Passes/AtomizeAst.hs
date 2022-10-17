@@ -42,14 +42,18 @@ removeComplexStmt :: Stmt -> PassEffs.StErrRnd sig m [Stmt]
 removeComplexStmt (Return expr) = do
   (stmts, lastExpr) <- removeComplexExp expr
   pure (stmts ++ [Return lastExpr])
-removeComplexStmt (Print expr) = do
+removeComplexStmt (Print expr) | isAtomic expr = do
   (stmts, lastExpr) <- removeComplexExp expr
   pure (stmts ++ [Print lastExpr])
+removeComplexStmt (Print expr) = do
+  (stmts, lastExpr) <- removeComplexExp expr
+  varName <- Utils.freshVarName fresh
+  modify (addLocal varName)
+  pure (stmts ++ [Let varName lastExpr, Print (Var varName)])
 removeComplexStmt (Let binding expr) = do
   (stmts, lastExpr) <- removeComplexExp expr
   modify (addLocal binding)
   pure (stmts ++ [Let binding lastExpr])
-removeComplexStmt other = pure [other]
 
 removeComplexExp :: Expr -> PassEffs.StErrRnd sig m ([Stmt], Expr)
 removeComplexExp expr | isReduced expr = pure ([], expr)

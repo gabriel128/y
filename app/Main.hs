@@ -47,7 +47,6 @@ runCompiler yacllFile outFile = do
   let objFile = outFile <> ".o"
   contents <- readFromFile yacllFile
 
-  liftTIO $ putStrLn "blah"
   -- Compile!
   (_info, asmOutput) <- liftEither . left unpack $ parseAndCompile (pack contents)
   writeToFile asmFile (unpack asmOutput)
