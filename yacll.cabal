@@ -28,6 +28,9 @@ library
       Ast.Ast
       Ast.Examples
       Experiments
+      GeneralDS.Graph
+      GeneralDS.Queue
+      GeneralDS.Stack
       Interpreter.Eval
       Lib
       LocalMtl
@@ -37,6 +40,7 @@ library
       Parser.Parser
       Passes.AtomizeAst
       Passes.PassEffs
+      Passes.RegisterAlloc
       Passes.StmtsToX86
       Passes.X86ToTextProg
       Utils
@@ -124,8 +128,10 @@ test-suite yacll-test
   other-modules:
       AtomizeTests
       FullProgramTests
+      GeneralDSTests
       InterpreterTests
       ParserTests
+      RegisterAllocTests
       Paths_yacll
   hs-source-dirs:
       test

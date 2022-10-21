@@ -55,11 +55,11 @@ fromStmtsToInstrs = foldl' reducer (pure [])
       pure $ prevInstrs ++ newInstrs
 
 fromStmtToInstrs :: (Has (State LocalStackMap) sig m, (Has (Throw Text) sig m)) => Stmt -> m [Instr]
--- x = 3;
+-- let x = 3;
 fromStmtToInstrs (Let binding (Const num)) = do
   x <- getStackMapping binding
   pure [movmi x num]
--- x = y; -> mov rax y; mov x rax
+-- let x = y; -> mov rax y; mov x rax
 fromStmtToInstrs (Let binding (Var binding2)) = do
   x <- getStackMapping binding
   y <- getStackMapping binding2
@@ -75,8 +75,8 @@ fromStmtToInstrs (Print (Const num)) =
   pure [movrl Rdi "printf_format", movri Rsi num, xor Rax Rax, call "printf WRT ..plt"]
 -- print x
 fromStmtToInstrs (Print (Var binding)) =
-  getStackMapping binding >>=
-  (\x -> pure [movrl Rdi "printf_format", movrm Rsi x, xor Rax Rax, call "printf WRT ..plt"])
+  getStackMapping binding
+    >>= (\x -> pure [movrl Rdi "printf_format", movrm Rsi x, xor Rax Rax, call "printf WRT ..plt"])
 -- Handle addition
 -- x = 2 + 2; -> mov x, 2; add x, 2
 fromStmtToInstrs (Let binding (BinOp Ast.Add (Const num1) (Const num2))) = do
