@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module GeneralDS.Graph where
 
 import Data.Map (fromList)
@@ -40,14 +42,29 @@ graphEx =
    in Graph (fromList [("a", nodeA), ("b", nodeB), ("c", nodeC), ("d", nodeD)])
 
 -- | Finds node with depth first search. Starts from an arbitrary node
-dfs :: (Eq a, Ord a) => a -> Graph a -> Maybe (Node a)
-dfs valToFind (Graph nodes) =
-  case Map.elems nodes of
-    [] -> Nothing
-    (node : _) -> go (Set.fromList [nodeVal node]) (Stack.push node Stack.new)
+dfs :: forall a. (Ord a) => a -> Graph a -> Maybe (Node a)
+dfs val (Graph nodes) = doDfs (Map.elems nodes)
   where
-    go :: Set a -> Stack (Node a) -> Maybe (Node a)
-    go visitedNodes nextNodes = undefined
+    -- doDfs :: [a] -> Maybe (Node a)
+    doDfs [] = Nothing
+    doDfs (node : _) = go Set.empty (Stack.push (nodeVal node) Stack.new)
+
+    go :: Set a -> Stack a -> Maybe (Node a)
+    go visitedNodeIds nextNodeIds = do
+      (node, newNextNodeIds) <- popNode nextNodeIds
+      let edges = nodeEdges node
+      if nodeVal node == val
+        then Just node
+        else
+          if Set.member (nodeVal node) visitedNodeIds
+            then go visitedNodeIds newNextNodeIds
+            else go (Set.insert (nodeVal node) visitedNodeIds) (foldr Stack.push newNextNodeIds edges)
+
+    popNode nextNodeIds = do
+      let (maybeNodeId, newNextNodeIds) = Stack.pop nextNodeIds
+      nodeId <- maybeNodeId
+      node <- Map.lookup nodeId nodes
+      pure (node, newNextNodeIds)
 
 bfs :: a -> Graph a -> Maybe (Node a)
 bfs = undefined

@@ -5,7 +5,6 @@ module Passes.RegisterAlloc where
 import Ast.Ast
 import Data.Set (Set, difference, empty, fromList, union)
 import Data.Text (Text)
-import Debug.Trace (trace, traceShow, traceShowId)
 import qualified Passes.PassEffs as PassEffs
 
 -- Available Registers  rbx rcx rdx rsi rdi r8 r9 r10 r11 r12 r13 r14
@@ -30,7 +29,7 @@ buildLiveness stmts = snd $ foldr reducer (empty, []) stmts
   where
     reducer :: Stmt -> (Set Text, [EnrichedStmt]) -> (Set Text, [EnrichedStmt])
     reducer stmt (livenessAfter, enrichedStmts) =
-      let liveness = traceShow stmt $ buildStmtLiveness stmt livenessAfter
+      let liveness = buildStmtLiveness stmt livenessAfter
           enrichedStmt = EnrichedStmt (StmtMetadata liveness) stmt
        in (liveness, enrichedStmt : enrichedStmts)
 

@@ -26,19 +26,26 @@ unitTests =
               ]
             builtGraph = foldr insertNode newGraph nodes
          in assertEqual "" graphEx builtGraph,
-      testCase "Stack tests" $ do
-        let stack = Stack.new
-        assertEqual "" stack (Stack [] :: Stack Int)
-        let stack1 = Stack.push 2 stack
-        assertEqual "" stack1 (Stack [2] :: Stack Int)
-        let stack2 = Stack.push 3 stack1
-        assertEqual "" stack2 (Stack [3, 2])
-        let stack3 = Stack.pop stack2
-        assertEqual "" stack3 (Just 3, Stack [2])
-        let stack4 = Stack.pop $ snd stack3
-        assertEqual "" stack4 (Just 2, Stack [])
-        let stack5 = Stack.pop $ snd stack4
-        assertEqual "" stack5 (Nothing, Stack []),
+      testCase "DFS" $ do
+        assertEqual "" (dfs "a" graphEx) (Just (Node "a" (Set.fromList ["b", "c"])))
+        assertEqual "" (dfs "c" graphEx) (Just (Node "c" (Set.fromList ["a"])))
+        assertEqual "" (dfs "f" graphEx) Nothing
+        assertEqual "" (dfs "b" graphEx) (Just (Node "b" (Set.fromList ["a", "d"]))),
+      testCase
+        "Stack tests"
+        $ do
+          let stack = Stack.new
+          assertEqual "" stack (Stack [] :: Stack Int)
+          let stack1 = Stack.push 2 stack
+          assertEqual "" stack1 (Stack [2] :: Stack Int)
+          let stack2 = Stack.push 3 stack1
+          assertEqual "" stack2 (Stack [3, 2])
+          let stack3 = Stack.pop stack2
+          assertEqual "" stack3 (Just 3, Stack [2])
+          let stack4 = Stack.pop $ snd stack3
+          assertEqual "" stack4 (Just 2, Stack [])
+          let stack5 = Stack.pop $ snd stack4
+          assertEqual "" stack5 (Nothing, Stack []),
       testCase "Queue tests" $ do
         let queue = Queue.new
         assertEqual "" (Queue.toList queue) ([] :: [Int])

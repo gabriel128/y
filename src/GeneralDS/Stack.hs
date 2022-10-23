@@ -6,6 +6,9 @@ newtype Stack a = Stack [a]
 new :: Stack a
 new = Stack []
 
+len :: Stack a -> Int
+len (Stack xs) = length xs
+
 pop :: Stack a -> (Maybe a, Stack a)
 pop (Stack (x : xs)) = (Just x, Stack xs)
 pop stack = (Nothing, stack)
