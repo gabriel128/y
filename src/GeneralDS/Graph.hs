@@ -42,24 +42,28 @@ graphEx =
    in Graph (fromList [("a", nodeA), ("b", nodeB), ("c", nodeC), ("d", nodeD)])
 
 -- | Finds node with depth first search. Starts from an arbitrary node
-dfs :: forall a. (Ord a) => a -> Graph a -> Maybe (Node a)
-dfs val (Graph nodes) = doDfs (Map.elems nodes)
+dfs :: forall a. Ord a => a -> Graph a -> Maybe (Node a)
+dfs val (Graph nodes) = go (Map.elems nodes)
   where
-    -- doDfs :: [a] -> Maybe (Node a)
-    doDfs [] = Nothing
-    doDfs (node : _) = go Set.empty (Stack.push (nodeVal node) Stack.new)
+    go [] = Nothing
+    go (node : _) = recurr Set.empty (Stack.push (nodeVal node) Stack.new)
 
-    go :: Set a -> Stack a -> Maybe (Node a)
-    go visitedNodeIds nextNodeIds = do
+    recurr :: Set a -> Stack a -> Maybe (Node a)
+    recurr visitedNodeIds nextNodeIds = do
       (node, newNextNodeIds) <- popNode nextNodeIds
-      let edges = nodeEdges node
-      if nodeVal node == val
-        then Just node
-        else
-          if Set.member (nodeVal node) visitedNodeIds
-            then go visitedNodeIds newNextNodeIds
-            else go (Set.insert (nodeVal node) visitedNodeIds) (foldr Stack.push newNextNodeIds edges)
 
+      let nodeId = nodeVal node
+      let edges = nodeEdges node
+
+      case (nodeVal node == val, Set.member nodeId visitedNodeIds) of
+        (True, _) -> Just node
+        (False, True) -> recurr visitedNodeIds newNextNodeIds
+        (False, False) ->
+          let nextSet = Set.insert nodeId visitedNodeIds
+              nextStack = foldr Stack.push newNextNodeIds edges
+           in recurr nextSet nextStack
+
+    popNode :: Stack a -> Maybe (Node a, Stack a)
     popNode nextNodeIds = do
       let (maybeNodeId, newNextNodeIds) = Stack.pop nextNodeIds
       nodeId <- maybeNodeId
