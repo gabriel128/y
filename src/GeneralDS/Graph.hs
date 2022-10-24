@@ -2,6 +2,7 @@
 
 module GeneralDS.Graph where
 
+import Data.List (foldl')
 import Data.Map (fromList)
 import qualified Data.Map as Map
 import Data.Map.Strict (Map, mapWithKey)
@@ -41,9 +42,28 @@ graphEx =
       nodeD = Node "d" (Set.fromList ["b"])
    in Graph (fromList [("a", nodeA), ("b", nodeB), ("c", nodeC), ("d", nodeD)])
 
--- | Finds node with depth first search. Starts from an arbitrary node
-dfs :: forall a. Ord a => a -> Graph a -> Maybe (Node a)
-dfs val (Graph nodes) = go (Map.elems nodes)
+-- | Returns a list of connected nodes in DFS order
+dfs :: forall a. (Show a, Ord a) => a -> Graph a -> Either Text [a]
+dfs source (Graph nodes) = reverse . snd <$> go (Map.lookup source nodes) Set.empty []
+  where
+    go :: Maybe (Node a) -> Set a -> [a] -> Either Text (Set a, [a])
+    go Nothing _ _ = Left "Node not found"
+    go (Just (Node nodeId edges)) visited result
+      | Set.member nodeId visited = Right (Set.empty, [])
+      | otherwise = do
+        let visited' = Set.insert nodeId visited
+        let newResult = nodeId : result
+        let notVisitedNodes = fmap (`Map.lookup` nodes) . filter (\neighbourId -> not . Set.member neighbourId $ visited') $ Set.toList edges
+        foldl' reducer (Right (visited', newResult)) notVisitedNodes
+
+    reducer :: Either Text (Set a, [a]) -> Maybe (Node a) -> Either Text (Set a, [a])
+    reducer visited node = do
+      (visited', result) <- visited
+      go node visited' result
+
+-- | Returns the node given a node val/id using DFS
+dfsNode :: forall a. Ord a => a -> Graph a -> Maybe (Node a)
+dfsNode val (Graph nodes) = go (Map.elems nodes)
   where
     go [] = Nothing
     go (node : _) = recurr Set.empty (Stack.push (nodeVal node) Stack.new)

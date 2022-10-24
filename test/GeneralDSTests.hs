@@ -26,11 +26,24 @@ unitTests =
               ]
             builtGraph = foldr insertNode newGraph nodes
          in assertEqual "" graphEx builtGraph,
-      testCase "DFS" $ do
-        assertEqual "" (dfs "a" graphEx) (Just (Node "a" (Set.fromList ["b", "c"])))
-        assertEqual "" (dfs "c" graphEx) (Just (Node "c" (Set.fromList ["a"])))
-        assertEqual "" (dfs "f" graphEx) Nothing
-        assertEqual "" (dfs "b" graphEx) (Just (Node "b" (Set.fromList ["a", "d"]))),
+      testCase "DFS" $
+        do
+          let nodes =
+                [ Node "a" (Set.fromList ["b", "c"]),
+                  Node "b" (Set.fromList ["a", "d"]),
+                  Node "c" (Set.fromList ["a"]),
+                  Node "d" (Set.fromList ["b"]),
+                  Node "e" (Set.fromList ["f"]),
+                  Node "f" (Set.fromList ["e"])
+                ]
+          let graph = foldr insertNode newGraph nodes
+          assertEqual "" (dfs "a" graph) (Right ["a", "b", "d", "c"])
+          assertEqual "" (dfs "b" graph) (Right ["b", "a", "c", "d"])
+          assertEqual "" (dfs "c" graph) (Right ["c", "a", "b", "d"])
+          assertEqual "" (dfs "d" graph) (Right ["d", "b", "a", "c"])
+          assertEqual "" (dfs "e" graph) (Right ["e", "f"])
+          assertEqual "" (dfs "f" graph) (Right ["f", "e"])
+          assertEqual "" (dfs "g" graph) (Left "Node not found"),
       testCase
         "Stack tests"
         $ do
