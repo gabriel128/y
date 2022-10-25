@@ -43,7 +43,25 @@ unitTests =
           assertEqual "" (dfs "d" graph) (Right ["d", "b", "a", "c"])
           assertEqual "" (dfs "e" graph) (Right ["e", "f"])
           assertEqual "" (dfs "f" graph) (Right ["f", "e"])
-          assertEqual "" (dfs "g" graph) (Left "Node not found"),
+          assertEqual "" (dfs "g" graph) (Left "Source not found"),
+      testCase "BFS" $
+        do
+          let nodes =
+                [ Node "a" (Set.fromList ["b", "c"]),
+                  Node "b" (Set.fromList ["a", "d"]),
+                  Node "c" (Set.fromList ["a"]),
+                  Node "d" (Set.fromList ["b"]),
+                  Node "e" (Set.fromList ["f"]),
+                  Node "f" (Set.fromList ["e"])
+                ]
+          let graph = foldr insertNode newGraph nodes
+          assertEqual "" (bfs "a" graph) (Right [(0, "a"), (1, "b"), (1, "c"), (2, "d")])
+          assertEqual "" (bfs "b" graph) (Right [(0, "b"), (1, "a"), (1, "d"), (2, "c")])
+          assertEqual "" (bfs "c" graph) (Right [(0, "c"), (1, "a"), (2, "b"), (3, "d")])
+          assertEqual "" (bfs "d" graph) (Right [(0, "d"), (1, "b"), (2, "a"), (3, "c")])
+          assertEqual "" (bfs "e" graph) (Right [(0, "e"), (1, "f")])
+          assertEqual "" (bfs "f" graph) (Right [(0, "f"), (1, "e")])
+          assertEqual "" (dfs "g" graph) (Left "Source not found"),
       testCase
         "Stack tests"
         $ do
