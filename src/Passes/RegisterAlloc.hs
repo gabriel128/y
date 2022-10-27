@@ -30,7 +30,7 @@ buildLiveness stmts = snd $ foldr reducer (empty, []) stmts
     reducer :: Stmt -> (Set Text, [EnrichedStmt]) -> (Set Text, [EnrichedStmt])
     reducer stmt (livenessAfter, enrichedStmts) =
       let liveness = buildStmtLiveness stmt livenessAfter
-          enrichedStmt = EnrichedStmt (StmtMetadata liveness) stmt
+          enrichedStmt = EnrichedStmt (StmtMetadata livenessAfter) stmt
        in (liveness, enrichedStmt : enrichedStmts)
 
 buildStmtLiveness :: Stmt -> LivenessAfterK -> LivenessBefore

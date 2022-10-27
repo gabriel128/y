@@ -21,11 +21,11 @@ ex1 =
 
 enrichedEx1 :: [EnrichedStmt]
 enrichedEx1 =
-  [ EnrichedStmt (StmtMetadata (fromList [])) (Let "a" (Const 5)),
+  [ EnrichedStmt (StmtMetadata (fromList ["a"])) (Let "a" (Const 5)),
     EnrichedStmt (StmtMetadata (fromList ["a"])) (Let "b" (Const 30)),
-    EnrichedStmt (StmtMetadata (fromList ["a"])) (Let "c" (Var "a")),
-    EnrichedStmt (StmtMetadata (fromList ["c"])) (Let "b" (Const 10)),
-    EnrichedStmt (StmtMetadata (fromList ["b", "c"])) (Let "b" (BinOp Add (Var "b") (Var "c")))
+    EnrichedStmt (StmtMetadata (fromList ["c"])) (Let "c" (Var "a")),
+    EnrichedStmt (StmtMetadata (fromList ["b", "c"])) (Let "b" (Const 10)),
+    EnrichedStmt (StmtMetadata (fromList [])) (Let "b" (BinOp Add (Var "b") (Var "c")))
   ]
 
 unitTests :: TestTree
