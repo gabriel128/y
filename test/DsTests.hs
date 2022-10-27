@@ -1,14 +1,20 @@
-module GeneralDSTests (test_general_ds) where
+{-# LANGUAGE ScopedTypeVariables #-}
+
+module DsTests (test_general_ds, dsProps) where
 
 import Control.Monad (join)
+import Data.Proxy (Proxy (..))
 import qualified Data.Set as Set
+import Debug.Trace (traceShowId)
 import GeneralDS.Graph
 import GeneralDS.Queue (Queue (..))
 import qualified GeneralDS.Queue as Queue
 import GeneralDS.Stack (Stack (..))
 import qualified GeneralDS.Stack as Stack
+import Test.QuickCheck.Classes
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
+import Test.Tasty.QuickCheck
 
 test_general_ds :: TestTree
 test_general_ds = testGroup "Tests" [unitTests]
@@ -24,8 +30,36 @@ unitTests =
                 Node "c" (Set.fromList ["a"]),
                 Node "d" (Set.fromList ["b"])
               ]
-            builtGraph = foldr insertNode newGraph nodes
-         in assertEqual "" graphEx builtGraph,
+        let builtGraph = foldr insertNode newGraph nodes
+        assertEqual "" graphEx builtGraph
+        assertBool "" (isValidGraph builtGraph),
+      testCase "builds a graph by inserting edges" $ do
+        let edges = [("a", "b"), ("a", "c"), ("b", "d")]
+        let builtGraph = foldr insertEdge newGraph edges
+        assertEqual "" graphEx builtGraph
+        assertBool "" (isValidGraph builtGraph),
+      testCase "Graph is a semigroup" $ do
+        let nodes =
+              [ Node "a" (Set.fromList ["b", "c"]),
+                Node "b" (Set.fromList ["a", "d"]),
+                Node "c" (Set.fromList ["a"]),
+                Node "d" (Set.fromList ["b"])
+              ]
+        let graph = foldr insertNode newGraph nodes
+        let nodes' =
+              [ Node "a" (Set.fromList ["f"]),
+                Node "f" (Set.fromList ["b"])
+              ]
+        let graph' = foldr insertNode newGraph nodes
+        let expectedNodes =
+              [ Node "a" (Set.fromList ["b", "c", "f"]),
+                Node "b" (Set.fromList ["a", "d", "f"]),
+                Node "c" (Set.fromList ["a"]),
+                Node "d" (Set.fromList ["b"]),
+                Node "f" (Set.fromList ["a", "b"])
+              ]
+        let expectedGraph = foldr insertNode newGraph nodes
+        assertEqual "" expectedGraph (graph <> graph'),
       testCase "DFS" $
         do
           let nodes =
@@ -94,3 +128,53 @@ unitTests =
         assertEqual "" (Queue.toList queue5) []
         assertEqual "" res2 Nothing
     ]
+
+dsProps :: TestTree
+dsProps =
+  testGroup
+    "DS properties"
+    (graphMonoidLaws ++ queueLaws)
+
+instance (Show a, Ord a, Arbitrary a) => Arbitrary (Node a) where
+  arbitrary = do
+    val <- arbitrary
+    return (Node val Set.empty)
+
+instance (Show a, Ord a, Arbitrary a) => Arbitrary (Graph a) where
+  arbitrary = do
+    edges :: [(a, a)] <- arbitrary
+    let graph = foldr insertEdge newGraph edges
+    if not . isValidGraph $ graph then error "Invalid graph" else return graph
+
+instance (Show a, Ord a, Arbitrary a) => Arbitrary (Queue a) where
+  arbitrary = do
+    queueElems :: [a] <- arbitrary
+    let queue = foldr Queue.enqueue Queue.new queueElems
+    return queue
+
+semigroupLaw :: (Monoid m, Eq m) => m -> Bool
+semigroupLaw m = m <> mempty == m && m == mempty <> m
+
+monoidLaw :: (Monoid m, Eq m) => m -> m -> m -> Bool
+monoidLaw ma mb mc = (ma <> mb) <> mc == ma <> (mb <> mc)
+
+functorIdLaw :: (Functor k, Eq (k a)) => k a -> Bool
+functorIdLaw k = fmap id k == k
+
+functorFusionLaw :: (Functor k, Eq (k c)) => k a -> Fun b c -> Fun a b -> Bool
+functorFusionLaw k (Fun _ f) (Fun _ g) = (fmap (f . g) k) == (fmap f . fmap g $ k)
+
+queueLaws :: [TestTree]
+queueLaws =
+  [ testProperty "Queue len == Elemens as list len" $
+      \(queue :: Queue Int) -> fromIntegral (Queue.len queue) == length (Queue.toList queue),
+    testProperty "Queue Functor laws: identity " $ \(queue :: Queue Int) -> functorIdLaw queue,
+    testProperty "Queue Functor laws: fusion " $
+      \(queue :: Queue Int, f :: Fun Int Int, g :: Fun Int Int) -> functorFusionLaw queue g f
+  ]
+
+graphMonoidLaws :: [TestTree]
+graphMonoidLaws =
+  [ testProperty "Graph Semigroup laws (identity)" $ \(graph :: Graph Int) -> semigroupLaw graph,
+    testProperty "Graph Monoid law (associativity)" $ \(graph :: Graph Int, graph1 :: Graph Int, graph2 :: Graph Int) -> monoidLaw graph graph1 graph2
+  ]
