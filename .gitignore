@@ -2,5 +2,3 @@
 *~
 *.o
 *.out
-
-test/results/*
