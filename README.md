@@ -32,7 +32,3 @@ check the /examples folder.
 ```
 stack test --file-watch --fast
 ```
-
-
-
-s
