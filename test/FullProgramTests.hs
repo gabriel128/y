@@ -25,7 +25,7 @@ compileAndRun progName = do
 unitTests :: TestTree
 unitTests =
   testGroup
-    "parser tests"
+    "Full programs tests"
     [ testCase "arithm" $ do
         runRes <- compileAndRun "arithm"
         assertEqual "" "8\n" runRes,

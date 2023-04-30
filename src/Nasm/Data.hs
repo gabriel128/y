@@ -66,7 +66,7 @@ instance Print MemDeref where
   textPrint (MemDeref r offset)
     | offset < 0 = pack $ "[" <> unpack (textPrint r) <> show offset <> "]"
     | offset > 0 = pack $ "[" <> unpack (textPrint r) <> "+" <> show offset <> "]"
-    | offset == 0 = pack $ "[" <> unpack (textPrint r) <> "]"
+    | otherwise = pack $ "[" <> unpack (textPrint r) <> "]"
 
 instance Print RMArg where
   textPrint (RMr reg) = textPrint reg

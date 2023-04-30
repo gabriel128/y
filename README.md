@@ -26,3 +26,9 @@ This project represents effects using fused-effects.
 # Prog Examples
 
 check the /examples folder.
+
+# Tests
+
+```
+stack test --file-watch --fast
+```

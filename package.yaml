@@ -69,7 +69,8 @@ tests:
     - tasty
     - doctest-parallel
     - tasty-hunit
-    - tasty-smallcheck
+    - tasty-quickcheck
+    - quickcheck-classes
 
 default-extensions:
   - MultiWayIf
