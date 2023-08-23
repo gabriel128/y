@@ -14,6 +14,7 @@ data BinOp
   | Sub
   | Mul
   | Div
+  | ShiftL
   deriving (Eq, Show)
 
 data Expr
@@ -34,8 +35,9 @@ type Locals = [T.Text]
 
 type StackOffset = Int
 
-data Info = Info {infoLocals :: Locals, infoStackOffset :: StackOffset} deriving (Show, Eq)
+data Info = Info {infoLocals :: !Locals, infoStackOffset :: !StackOffset} deriving (Show, Eq)
 
+-- A program is a sequence of statements
 newtype Program = Program {progStmts :: [Stmt]} deriving (Show, Eq)
 
 newProgram :: [Stmt] -> Program
@@ -45,4 +47,5 @@ defaultInfo :: Info
 defaultInfo = Info [] 0
 
 addLocal :: T.Text -> Info -> Info
-addLocal text (Info locals sOffet) = Info (locals ++ [text]) sOffet
+addLocal localVar (Info locals sOffet) | localVar `elem` locals = Info locals sOffet
+addLocal localVar (Info locals sOffet) = Info (locals ++ [localVar]) sOffet

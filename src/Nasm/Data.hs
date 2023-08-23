@@ -1,18 +1,16 @@
+{-# LANGUAGE GADTs #-}
+
 module Nasm.Data where
 
 import Data.Text (Text, pack, toLower, unpack)
 import Utils
-
-type Label = Text
-
-type Offset = Int
 
 newtype Imm = Imm Int deriving (Eq)
 
 data NasmError = InvalidAsm Text | GeneralError Text deriving (Show)
 
 -- A memory address (e.g., [eax], [var + 4], or dword ptr [eax+ebx])
-data MemDeref = MemDeref Reg Offset deriving (Eq, Show)
+data MemDeref = Deref Reg Offset deriving (Eq, Show)
 
 -- lea edi, [ebx+4*esi] — the quantity EBX+4*ESI is placed in EDI.
 -- lea eax, [var] — the value in var is placed in EAX.
@@ -30,16 +28,13 @@ data BinaryArgs
   | RL Reg Label
   deriving (Eq)
 
-data Reg = Rsp | Rbp | Rax | Rbx | Rcx | Rdx | Rsi | Rdi | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15
-  deriving (Eq, Show)
-
 data Arg = ArgI Imm | ArgM MemDeref | ArgR Reg
 
 data Instr
   = Add BinaryArgs
   | Sub BinaryArgs
   | Neg RMArg
-  | Mov BinaryArgs
+  | Mov' BinaryArgs
   | Xor BinaryArgs
   | Call Label
   | Push Arg
@@ -47,26 +42,17 @@ data Instr
   | Ret
   | Jmp Label
 
-instance Print Reg where
-  textPrint r = toLower . pack $ show r
-
 instance Print Instr where
   textPrint (Add binaryMode) = "add " <> textPrint binaryMode
   textPrint (Sub binaryMode) = "sub " <> textPrint binaryMode
   textPrint (Neg unaryMode) = "neg " <> textPrint unaryMode
-  textPrint (Mov binaryMode) = "mov " <> textPrint binaryMode
+  textPrint (Mov' binaryMode) = "mov " <> textPrint binaryMode
   textPrint (Call label) = "call " <> label
   textPrint (Push mode) = "push " <> textPrint mode
   textPrint (Pop mode) = "pop " <> textPrint mode
   textPrint (Xor mode) = "xor " <> textPrint mode
   textPrint Ret = "ret"
   textPrint (Jmp label) = pack $ "jmp " <> show label
-
-instance Print MemDeref where
-  textPrint (MemDeref r offset)
-    | offset < 0 = pack $ "[" <> unpack (textPrint r) <> show offset <> "]"
-    | offset > 0 = pack $ "[" <> unpack (textPrint r) <> "+" <> show offset <> "]"
-    | otherwise = pack $ "[" <> unpack (textPrint r) <> "]"
 
 instance Print RMArg where
   textPrint (RMr reg) = textPrint reg
@@ -87,3 +73,54 @@ instance Print BinaryArgs where
   textPrint (RI r imm) = textPrint r <> "," <> textPrint imm
   textPrint (RL r text) = textPrint r <> "," <> text
   textPrint (MI mem imm) = "qword " <> textPrint mem <> "," <> textPrint imm
+
+-- New definitions
+type Label = Text
+
+type Offset = Int
+
+type Immediate = Int
+
+data Reg = Rsp | Rbp | Rax | Rbx | Rcx | Rdx | Rsi | Rdi | R8 | R9 | R10 | R11 | R12 | R13 | R14 | R15
+  deriving (Eq, Show)
+
+-- Allowed Binary arguments
+class AllowedBinAargs a b
+
+class IsMemOrReg a
+
+data NasmInstr a b where
+  Mov :: (Print a, Print b, Show b, AllowedBinAargs a b) => a -> b -> NasmInstr a b
+  Add' :: (Print a, Print b, Show b, AllowedBinAargs a b) => a -> b -> NasmInstr a b
+  Sub' :: (Print a, Print b, Show b, AllowedBinAargs a b) => a -> b -> NasmInstr a b
+  Neg' :: (Print a, IsMemOrReg a) => a -> NasmInstr a ()
+
+instance AllowedBinAargs Reg Reg
+
+instance AllowedBinAargs MemDeref Reg
+
+instance AllowedBinAargs Reg MemDeref
+
+instance AllowedBinAargs Reg Int
+
+instance AllowedBinAargs Reg Text
+
+instance AllowedBinAargs MemDeref Int
+
+instance IsMemOrReg Reg
+
+instance IsMemOrReg MemDeref
+
+instance Print Reg where
+  textPrint r = toLower . pack $ show r
+
+instance Print MemDeref where
+  textPrint (Deref r offset) =
+    case compare offset 0 of
+      LT -> pack $ "[" <> unpack (textPrint r) <> show offset <> "]"
+      GT -> pack $ "[" <> unpack (textPrint r) <> "+" <> show offset <> "]"
+      EQ -> pack $ "[" <> unpack (textPrint r) <> "]"
+
+instance Print (NasmInstr a b) where
+  textPrint (Mov dest src) = "mov " <> textPrint dest <> ", " <> textPrint src
+  textPrint (Neg' dest) = "neg " <> textPrint dest

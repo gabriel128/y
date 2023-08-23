@@ -56,13 +56,14 @@ removeComplexStmt (Let binding expr) = do
   pure (stmts ++ [Let binding lastExpr])
 
 removeComplexExp :: Expr -> PassEffs.StErrRnd sig m ([Stmt], Expr)
-removeComplexExp expr | isReduced expr = pure ([], expr)
-removeComplexExp (UnaryOp op expr) = createSingleVar expr (UnaryOp op)
-removeComplexExp (BinOp op exprL exprR)
-  | isAtomic exprL = createSingleVar exprR (BinOp op exprL)
-  | isAtomic exprR = createSingleVar exprL $ flip (BinOp op) exprR
-  | otherwise = createDoubleVar exprL exprR (BinOp op)
-removeComplexExp expr = pure ([], expr)
+removeComplexExp expr' =
+  case expr' of
+    expr | isReduced expr -> pure ([], expr)
+    UnaryOp op expr -> createSingleVar expr (UnaryOp op)
+    BinOp op exprL exprR | isAtomic exprL -> createSingleVar exprR (BinOp op exprL)
+    BinOp op exprL exprR | isAtomic exprR -> createSingleVar exprL $ flip (BinOp op) exprR
+    BinOp op exprL exprR -> createDoubleVar exprL exprR (BinOp op)
+    expr -> pure ([], expr)
 
 createSingleVar :: Expr -> (Expr -> Expr) -> PassEffs.StErrRnd sig m ([Stmt], Expr)
 createSingleVar expr expConstr = do

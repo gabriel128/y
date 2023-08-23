@@ -18,22 +18,22 @@ import Nasm.Data
 -- >>> textPrint $ movrl Rax "blah"
 -- "mov rax,blah"
 movrr :: Reg -> Reg -> Instr
-movrr r1 r2 = Mov (RR r1 r2)
+movrr r1 r2 = Mov' (RR r1 r2)
 
 movrl :: Reg -> Label -> Instr
-movrl r1 label = Mov (RL r1 label)
+movrl r1 label = Mov' (RL r1 label)
 
 movrm :: Reg -> MemDeref -> Instr
-movrm r1 mem = Mov (RM r1 mem)
+movrm r1 mem = Mov' (RM r1 mem)
 
 movmr :: MemDeref -> Reg -> Instr
-movmr mem r = Mov (MR mem r)
+movmr mem r = Mov' (MR mem r)
 
 movmi :: MemDeref -> Int -> Instr
-movmi mem imm = Mov (MI mem (Imm imm))
+movmi mem imm = Mov' (MI mem (Imm imm))
 
 movri :: Reg -> Int -> Instr
-movri r imm = Mov (RI r (Imm imm))
+movri r imm = Mov' (RI r (Imm imm))
 
 -- | Sub Examples
 -- >>> textPrint $ subri Rsp 16
@@ -119,4 +119,4 @@ jmp :: Text -> Instr
 jmp = Jmp
 
 deref :: Reg -> Offset -> MemDeref
-deref = MemDeref
+deref = Deref

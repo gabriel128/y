@@ -40,7 +40,7 @@ mapVarsToStack = foldr reducer (0, M.empty)
   where
     reducer :: Text -> (Offset, LocalStackMap) -> (Offset, LocalStackMap)
     reducer local (n, amap) =
-      let amap' = M.insert local (MemDeref Rbp (n - 8)) amap
+      let amap' = M.insert local (Deref Rbp (n - 8)) amap
        in (n - 8, amap')
 
 getStackMapping :: (Has (State LocalStackMap) sig m, (Has (Throw Text) sig m)) => Text -> m MemDeref

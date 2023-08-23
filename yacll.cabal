@@ -130,6 +130,7 @@ test-suite yacll-test
       DsTests
       FullProgramTests
       InterpreterTests
+      NasmTests
       ParserTests
       RegisterAllocTests
       Paths_yacll
