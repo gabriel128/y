@@ -35,7 +35,6 @@ library
       Lib
       LocalMtl
       Nasm.Data
-      Nasm.Dsl
       Parser.Defs
       Parser.Parser
       Passes.AtomizeAst
