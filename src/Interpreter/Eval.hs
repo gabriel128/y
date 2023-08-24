@@ -36,6 +36,7 @@ interpStmt env (Let binding expr) = do
 interpStmt env (Return expr) = do
   exprRes <- interpExpr env expr
   pure (StmtResult env (Just exprRes))
+interpStmt _ _ = Left "wrong statement"
 
 interpStmts :: [Stmt] -> Either T.Text StmtResult
 interpStmts = foldM go emptyStmtResult

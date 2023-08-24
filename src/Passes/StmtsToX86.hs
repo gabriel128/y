@@ -1,7 +1,4 @@
-{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# OPTIONS_GHC -Wno-deferred-out-of-scope-variables #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 -- | Represents type checked X86 in NASM format
 module Passes.StmtsToX86 where
