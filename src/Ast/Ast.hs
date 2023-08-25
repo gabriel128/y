@@ -1,5 +1,7 @@
 module Ast.Ast where
 
+import Data.Set (Set)
+import qualified Data.Set as Set
 import qualified Data.Text as T
 
 data Func = Func {funcId :: T.Text, funcArgs :: [Expr]}
@@ -31,7 +33,9 @@ data Stmt
   | Return Expr
   deriving (Eq, Show)
 
-type Locals = [T.Text]
+-- Locals Vars are meant to be unique.
+-- But there is no place in the stack ensured
+type Locals = Set T.Text
 
 type StackOffset = Int
 
@@ -44,8 +48,10 @@ newProgram :: [Stmt] -> Program
 newProgram = Program
 
 defaultInfo :: Info
-defaultInfo = Info [] 0
+defaultInfo = Info Set.empty 0
 
 addLocal :: T.Text -> Info -> Info
-addLocal localVar (Info locals sOffet) | localVar `elem` locals = Info locals sOffet
-addLocal localVar (Info locals sOffet) = Info (locals ++ [localVar]) sOffet
+addLocal localVar (Info locals sOffet) = Info (Set.insert localVar locals) sOffet
+
+infoLocalsList :: Info -> [T.Text]
+infoLocalsList = Set.toAscList . infoLocals

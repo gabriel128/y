@@ -12,28 +12,41 @@ import Control.Carrier.State.Strict
 import Data.Either.Combinators (maybeToRight)
 import Data.List (foldl')
 import qualified Data.Map as M
+import qualified Data.Set as Set
 import Data.Text (Text, pack)
 import Nasm.Data as Nasm
 import qualified Passes.PassEffs as PassEffs
 
+-- $setup
+
+-- Map from variables to stack offets
 type LocalStackMap = M.Map Text MemDeref
 
 astToNasm :: Program -> PassEffs.StErr sig m [Nasm.Instr]
 astToNasm prog = do
-  localVars <- gets @Info infoLocals
-  let (stackOffset, stackVars) = mapVarsToStack localVars
-  put (Info localVars (alignStack16 stackOffset))
-  (_, instrs) <- runState @LocalStackMap stackVars $ fromStmtsToInstrs (progStmts prog)
+  localVars <- gets @Info infoLocalsList
+  let (stackOffset, varsStackMapping) = mapVarsToBspOffset localVars
+  put (Info (Set.fromList localVars) (alignStack16 stackOffset))
+  (_, instrs) <- runState @LocalStackMap varsStackMapping $ fromStmtsToInstrs (progStmts prog)
   pure instrs
 
+-- == Private ==
+
+--- | As per ABI requirements the stack must be aligned 16bytes before any call.
+-- More info see https://refspecs.linuxbase.org/elf/x86_64-abi-0.99.pdf Section 3.2.2
 alignStack16 :: Int -> Int
 alignStack16 offset = offset - (offset `mod` 16)
 
 lookupEither :: Text -> LocalStackMap -> Either Text MemDeref
 lookupEither binding mapping = maybeToRight ("Var not bound: " <> binding) (M.lookup binding mapping)
 
-mapVarsToStack :: [Text] -> (Offset, LocalStackMap)
-mapVarsToStack = foldr reducer (0, M.empty)
+-- | Assigns a base pointer offset to each variable
+-- >>> mapVarsToBspOffset ["x", "y"]
+-- (-16,fromList [("x",Deref Rbp (-16)),("y",Deref Rbp (-8))])
+-- >>> mapVarsToBspOffset ["x"]
+-- (-8,fromList [("x",Deref Rbp (-8))])
+mapVarsToBspOffset :: [Text] -> (Offset, LocalStackMap)
+mapVarsToBspOffset = foldr reducer (0, M.empty)
   where
     reducer :: Text -> (Offset, LocalStackMap) -> (Offset, LocalStackMap)
     reducer local (n, amap) =
