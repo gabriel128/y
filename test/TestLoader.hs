@@ -1,8 +1,8 @@
 import AtomizeTests
 import DsTests
 import FullProgramTests (test_full_progs)
-import NasmTests (test_nasm)
 import InterpreterTests
+import NasmTests (test_nasm)
 import ParserTests (test_parser)
 import RegisterAllocTests (test_reg_alloc)
 import Test.DocTest (mainFromCabal)

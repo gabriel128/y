@@ -65,7 +65,7 @@ fromStmtsToInstrs = foldl' reducer (pure [])
       pure $ prevInstrs ++ newInstrs
 
 fromStmtToInstrs :: (Has (State LocalStackMap) sig m, (Has (Throw Text) sig m)) => Stmt -> m [Instr]
--- x = 3;
+-- let x = 3;
 fromStmtToInstrs (Let binding (Const num)) = do
   x <- getStackMapping binding
   pure [Mov x num]
