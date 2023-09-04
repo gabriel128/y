@@ -35,7 +35,6 @@ library
       Lib
       LocalMtl
       Nasm.Data
-      Nasm.Dsl
       Parser.Defs
       Parser.Parser
       Passes.AtomizeAst
@@ -130,6 +129,7 @@ test-suite yacll-test
       DsTests
       FullProgramTests
       InterpreterTests
+      NasmTests
       ParserTests
       RegisterAllocTests
       Paths_yacll

@@ -33,7 +33,7 @@ parseLet = label "let" . lexeme $
     void (string "let")
     void space1
     var <- parseId
-    void (symbol "=")
+    void (symbol ":=")
     expr <- parseExpr
     void (symbol ";")
     return (Ast.Let var expr)
@@ -70,6 +70,8 @@ opTable =
     ],
     [ binary "+" (Ast.BinOp Ast.Add),
       binary "-" (Ast.BinOp Ast.Sub)
+    ],
+    [ binary "<<" (Ast.BinOp Ast.ShiftL)
     ]
   ]
 

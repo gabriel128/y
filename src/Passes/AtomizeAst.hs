@@ -12,7 +12,7 @@
 -- let y = (2 + (3 + 4)); let x = 1 + y
 -- =>
 -- let z = 3 + 4; let y = 2 + z; let x = 1 + y
-module Passes.AtomizeAst (removeComplexStmts, runRemComplexStmts) where
+module Passes.AtomizeAst where
 
 import Ast.Ast
 import Control.Carrier.Error.Either
@@ -23,9 +23,21 @@ import Data.Text (Text)
 import qualified Passes.PassEffs as PassEffs
 import Utils
 
+-- Setup Doc test
+
+-- $setup
+-- >>> import Ast.Ast
+-- >>> import Control.Carrier.Error.Either
+-- >>> import Control.Carrier.Fresh.Strict
+-- >>> import Control.Carrier.State.Strict
+-- >>> import qualified Passes.PassEffs as PassEffs
+-- >>> import Passes.PassEffs (runStErr)
+-- >>> import Data.Either (fromRight)
+
 runRemComplexStmts :: Info -> Program -> Either Text (Info, Program)
 runRemComplexStmts info program = run . runError . runState info $ removeComplexStmts program
 
+--  === Public Api ===
 removeComplexStmts :: Program -> PassEffs.StErr sig m Program
 removeComplexStmts (Program stmts) = fmap snd $
   runFresh 0 $ do
@@ -38,6 +50,9 @@ removeComplexStmts (Program stmts) = fmap snd $
       stmts' <- removeComplexStmt stmt
       pure (prevStmts' ++ stmts')
 
+-- === Private ====
+
+--  Transform a complex statment (i.e. statements that are not atomic) into sequential let bindings
 removeComplexStmt :: Stmt -> PassEffs.StErrRnd sig m [Stmt]
 removeComplexStmt (Return expr) = do
   (stmts, lastExpr) <- removeComplexExp expr
@@ -55,24 +70,32 @@ removeComplexStmt (Let binding expr) = do
   modify (addLocal binding)
   pure (stmts ++ [Let binding lastExpr])
 
+-- Creates let statements from complex expressions
 removeComplexExp :: Expr -> PassEffs.StErrRnd sig m ([Stmt], Expr)
-removeComplexExp expr | isReduced expr = pure ([], expr)
-removeComplexExp (UnaryOp op expr) = createSingleVar expr (UnaryOp op)
-removeComplexExp (BinOp op exprL exprR)
-  | isAtomic exprL = createSingleVar exprR (BinOp op exprL)
-  | isAtomic exprR = createSingleVar exprL $ flip (BinOp op) exprR
-  | otherwise = createDoubleVar exprL exprR (BinOp op)
-removeComplexExp expr = pure ([], expr)
+removeComplexExp expr' =
+  case expr' of
+    expr | isReduced expr -> pure ([], expr)
+    UnaryOp op expr -> createLetBinding expr (UnaryOp op)
+    BinOp op exprL exprR | isAtomic exprL -> createLetBinding exprR (BinOp op exprL)
+    BinOp op exprL exprR | isAtomic exprR -> createLetBinding exprL $ flip (BinOp op) exprR
+    BinOp op exprL exprR -> createDoubleLetBinding exprL exprR (BinOp op)
+    expr -> pure ([], expr)
 
-createSingleVar :: Expr -> (Expr -> Expr) -> PassEffs.StErrRnd sig m ([Stmt], Expr)
-createSingleVar expr expConstr = do
+-- | Creates a single let statement, it will have the shape of tmp_x where x is an incremental number
+-- >>> runStErr defaultInfo $ runFresh 0 $ createLetBinding (Const 3) (BinOp Add (Const 4))
+-- Right (Info {infoLocals = fromList ["tmp_0"], infoStackOffset = 0},(1,([Let "tmp_0" (Const 3)],BinOp Add (Const 4) (Var "tmp_0"))))
+createLetBinding :: Expr -> (Expr -> Expr) -> PassEffs.StErrRnd sig m ([Stmt], Expr)
+createLetBinding expr expConstr = do
   varName <- Utils.freshVarName fresh
   (stmts, expr') <- removeComplexExp expr
   modify (addLocal varName)
   pure (stmts ++ [Let varName expr'], expConstr (Var varName))
 
-createDoubleVar :: Expr -> Expr -> (Expr -> Expr -> Expr) -> PassEffs.StErrRnd sig m ([Stmt], Expr)
-createDoubleVar exprL exprR expConstr = do
+-- | Utility function to create two let bindings at one from one
+-- >>> runStErr defaultInfo $ runFresh 0 $ createDoubleLetBinding (Const 3) (Const 4) (BinOp Add)
+-- Right (Info {infoLocals = fromList ["tmp_0","tmp_1"], infoStackOffset = 0},(2,([Let "tmp_0" (Const 3),Let "tmp_1" (Const 4)],BinOp Add (Var "tmp_0") (Var "tmp_1"))))
+createDoubleLetBinding :: Expr -> Expr -> (Expr -> Expr -> Expr) -> PassEffs.StErrRnd sig m ([Stmt], Expr)
+createDoubleLetBinding exprL exprR expConstr = do
   varNameL <- Utils.freshVarName fresh
   varNameR <- Utils.freshVarName fresh
   (stmtsL, exprL') <- removeComplexExp exprL
@@ -81,6 +104,7 @@ createDoubleVar exprL exprR expConstr = do
   modify (addLocal varNameR)
   pure (stmtsL ++ [Let varNameL exprL'] ++ stmtsR ++ [Let varNameR exprR'], expConstr (Var varNameL) (Var varNameR))
 
+-- If it's reduced it means that it can't be reduced further
 isReduced :: Expr -> Bool
 isReduced expr | isAtomic expr = True
 isReduced (BinOp _ expr1 expr2) = isAtomic expr1 && isAtomic expr2

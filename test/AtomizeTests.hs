@@ -6,6 +6,7 @@ module AtomizeTests (test_id_ir) where
 
 import Ast.Ast
 import Data.Either.Combinators
+import qualified Data.Set as Set
 import Passes.AtomizeAst
 import Passes.PassEffs
 import Test.Tasty (TestTree, testGroup)
@@ -30,17 +31,22 @@ unitTests =
   testGroup
     "ListStack"
     [ testCase "remove complex ops do nothing when not needed" $
-        let (Info ["x"] 0, prog) = runComplexStmts [Let "x" (Const 8)]
+        let (Info locals 0, prog) = runComplexStmts [Let "x" (Const 8)]
             expected = Program [Let "x" (Const 8)]
-         in assertEqual "" prog expected,
+         in do
+              assertEqual "" locals (Set.fromList ["x"])
+              assertEqual "" prog expected,
       --
       testCase "remove complex ops do nothing with more complex ops but still atomic" $
-        let (Info ["x"] 0, prog) = runComplexStmts [Let "x" (UnaryOp Neg (Const 8))]
+        let (Info locals 0, prog) = runComplexStmts [Let "x" (UnaryOp Neg (Const 8))]
             expected = newProgram [Let "x" (UnaryOp Neg (Const 8))]
-         in assertEqual "" prog expected,
+         in do
+              assertEqual "" locals (Set.fromList ["x"])
+              assertEqual "" prog expected,
       -- --
       testCase "remove complex ops on Unary" $
-        let (Info [var', "x"] 0, prog) = runComplexStmts [Let "x" (UnaryOp Neg (UnaryOp Neg (Const 8)))]
+        let (Info locals 0, prog) = runComplexStmts [Let "x" (UnaryOp Neg (UnaryOp Neg (Const 8)))]
+            [var', "x"] = Set.toAscList locals
          in case prog of
               Program
                 [ Let var (UnaryOp Neg (Const 8)),
@@ -49,41 +55,64 @@ unitTests =
               res -> assertBool ("It didn't construct the correct tmp vars, got: " <> show res) False,
       -- --
       testCase "multiple stmts remove complex ops with Unary" $
-        let stmts = [Let "x" (UnaryOp Neg (UnaryOp Neg (Const 8))), Let "y" (UnaryOp Neg (UnaryOp Neg (Const 8)))]
-            (Info [var, "x", var1, "y"] 0, prog) = runComplexStmts stmts
+        let stmts =
+              [ Let "x" (UnaryOp Neg (UnaryOp Neg (Const 8))),
+                Let "y" (UnaryOp Neg (UnaryOp Neg (Const 8)))
+              ]
+            (Info locals 0, prog) = runComplexStmts stmts
          in case prog of
               Program
-                [ Let var' (UnaryOp Neg (Const 8)),
-                  Let "x" (UnaryOp Neg (Var var'')),
-                  Let var1' (UnaryOp Neg (Const 8)),
-                  Let "y" (UnaryOp Neg (Var var1''))
-                  ] ->
-                  assertBool
-                    ("tmp vars are not equal: " <> show var <> show var1)
-                    (var == var' && var' == var'' && var1 == var1' && var1' == var1'' && var /= var1)
+                [ Let "tmp_0" (UnaryOp Neg (Const 8)),
+                  Let "x" (UnaryOp Neg (Var "tmp_0")),
+                  Let "tmp_1" (UnaryOp Neg (Const 8)),
+                  Let "y" (UnaryOp Neg (Var "tmp_1"))
+                  ] -> do
+                  assertEqual "info is incorrect" locals (Set.fromList ["tmp_0", "x", "tmp_1", "y"])
+                  assertBool "tmp vars are not equal" True
               res -> assertBool ("It didn't construct the correct tmp vars, got: " <> show res) False,
       -- -- --
       testCase "remove nested Unary" $
         let stmts = [Let "x" (UnaryOp Neg (UnaryOp Neg (UnaryOp Neg (Const 8))))]
             atomStmts = progStmts . snd . runComplexStmts $ stmts
          in case atomStmts of
-              res@[Let var (UnaryOp Neg (Const 8)), Let var1 (UnaryOp Neg (Var var')), Let "x" (UnaryOp Neg (Var var1'))] -> do
-                assertBool ("tmp vars are not equal, got" <> show res) (var == var' && var1 == var1')
-                assertBool ("tmp vars should be different, got: " <> show res) (var /= var1)
+              [ Let "tmp_1" (UnaryOp Neg (Const 8)),
+                Let "tmp_0" (UnaryOp Neg (Var "tmp_1")),
+                Let "x" (UnaryOp Neg (Var "tmp_0"))
+                ] -> do
+                  assertBool "tmp vars are not equal" True
               res -> assertBool ("It didn't construct the correct tmp vars, got: " <> show res) False,
       -- -- --
       testCase "remove complex ops on Binary ops" $
         let stmts = [Let "x" (BinOp Add (Const 10) (UnaryOp Neg (Const 8)))]
-            (Info [lvar, "x"] 0, atomStmts) = runComplexStmts stmts
+            (Info locals 0, atomStmts) = runComplexStmts stmts
          in case progStmts atomStmts of
-              [Let var (UnaryOp Neg (Const 8)), Let "x" (BinOp Add (Const 10) (Var var1))] ->
-                assertBool "tmp vars are not equal" (var == var1 && var == lvar)
+              [ Let "tmp_0" (UnaryOp Neg (Const 8)),
+                Let "x" (BinOp Add (Const 10) (Var "tmp_0"))
+                ] -> do
+                  assertEqual "" locals (Set.fromList ["tmp_0", "x"])
+                  assertBool "tmp vars are not equal" True
+              res ->
+                assertBool ("It didn't construct the correct tmp vars, got: " <> show res) False,
+      -- ------
+      testCase "multiple similar bindings discard first one" $
+        let stmts =
+              [ Let "x" (BinOp Add (Const 10) (Const 8)),
+                Let "x" (BinOp Add (Const 11) (Const 9))
+              ]
+            (Info locals 0, atomStmts) = runComplexStmts stmts
+         in case progStmts atomStmts of
+              [ Let "x" (BinOp Add (Const 10) (Const 8)),
+                Let "x" (BinOp Add (Const 11) (Const 9))
+                ] -> do
+                  assertEqual "" ["x"] (Set.toAscList locals)
+                  assertBool "tmp vars are not equal" True
               res ->
                 assertBool ("It didn't construct the correct tmp vars, got: " <> show res) False,
       ------
       testCase "remove expr on Print" $
         let stmts = [Print (BinOp Add (Const 10) (Const 8))]
-            (Info [lvar] 0, atomStmts) = runComplexStmts stmts
+            (Info locals 0, atomStmts) = runComplexStmts stmts
+            [lvar] = Set.toAscList locals
          in case progStmts atomStmts of
               [Let lvar' (BinOp Add (Const 10) (Const 8)), Print (Var lvar'')] ->
                 assertBool "tmp vars are not equal" (lvar == lvar' && lvar' == lvar'')
@@ -92,7 +121,8 @@ unitTests =
       -- -- --
       testCase "remove more complex ops on Binary ops" $
         let stmts = [Let "x" (BinOp Add (UnaryOp Neg (Const 8)) (Const 10))]
-            (Info [lvar, "x"] 0, atomStmts) = runComplexStmts stmts
+            (Info locals 0, atomStmts) = runComplexStmts stmts
+            [lvar, "x"] = Set.toAscList locals
          in case progStmts atomStmts of
               [Let var (UnaryOp Neg (Const 8)), Let "x" (BinOp Add (Var var1) (Const 10))] ->
                 assertBool "tmp vars are not equal" (var == var1 && lvar == var)
@@ -101,7 +131,8 @@ unitTests =
       -- -- --
       testCase "remove even more complex ops on Binary ops" $
         let stmts = [Let "x" (BinOp Add (UnaryOp Neg (Const 8)) (UnaryOp Neg (Const 10)))]
-            (Info [lvar, lvar1, "x"] 0, atomStmts) = runComplexStmts stmts
+            (Info locals 0, atomStmts) = runComplexStmts stmts
+            [lvar, lvar1, "x"] = Set.toAscList locals
          in case progStmts atomStmts of
               res@[Let var (UnaryOp Neg (Const 8)), Let var1 (UnaryOp Neg (Const 10)), Let "x" (BinOp Add (Var var') (Var var1'))] -> do
                 assertBool ("tmp vars are not equal, got" <> show res) (var == var' && var1 == var1' && var == lvar && var1 == lvar1)

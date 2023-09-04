@@ -7,6 +7,15 @@ import System.Random.Stateful (StdGen)
 class Print s where
   textPrint :: s -> Text
 
+instance Print Int where
+  textPrint = pack . show
+
+instance Print String where
+  textPrint = pack
+
+instance Print Text where
+  textPrint a = a
+
 freshVarName :: (Monad m) => m Int -> m Text
 freshVarName = fmap (\x -> pack $ "tmp_" <> show x)
 
