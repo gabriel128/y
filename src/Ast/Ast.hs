@@ -21,7 +21,6 @@ data BinOp
 
 data Expr
   = Const Int
-  | Fn Func
   | UnaryOp UnaryOp Expr
   | BinOp BinOp Expr Expr
   | Var T.Text

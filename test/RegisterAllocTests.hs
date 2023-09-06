@@ -23,11 +23,11 @@ ex1 =
 
 enrichedEx1 :: [EnrichedStmt]
 enrichedEx1 =
-  [ EnrichedStmt (StmtLiveness (fromList ["a"]) (fromList ["a"])) (Let "a" (Const 5)),
-    EnrichedStmt (StmtLiveness (fromList ["a"]) (fromList ["b"])) (Let "b" (Const 30)),
-    EnrichedStmt (StmtLiveness (fromList ["c"]) (fromList ["c"])) (Let "c" (Var "a")),
-    EnrichedStmt (StmtLiveness (fromList ["b", "c"]) empty) (Let "b" (Const 10)),
-    EnrichedStmt (StmtLiveness (fromList [""]) (fromList ["b"])) (Let "b" (BinOp Add (Var "b") (Var "c")))
+  [ EnrichedStmt (fromList ["a"]) (fromList ["a"]) (Let "a" (Const 5)),
+    EnrichedStmt (fromList ["a"]) (fromList ["b"]) (Let "b" (Const 30)),
+    EnrichedStmt (fromList ["c"]) (fromList ["c"]) (Let "c" (Var "a")),
+    EnrichedStmt (fromList ["b", "c"]) empty (Let "b" (Const 10)),
+    EnrichedStmt (fromList [""]) (fromList ["b"]) (Let "b" (BinOp Add (Var "b") (Var "c")))
   ]
 
 ex2 :: [Stmt]
@@ -57,10 +57,10 @@ unitTests =
         assertEqual "" (fmap stmt enrichedEx1) (fmap stmt enrichedStmts),
       testCase "liveness_ex1" $ do
         let enrichedStmts = buildLiveness ex1
-        assertEqual "" (fmap stmtMetadata enrichedEx1) (fmap stmtMetadata enrichedStmts),
+        assertEqual "" enrichedEx1 enrichedStmts,
       testCase "liveness_ex2" $ do
         let enrichedStmts = buildLiveness ex2
-            liveness = fmap (livenessAfter . stmtMetadata) enrichedStmts
-            writeSet = fmap (stmtWriteSet . stmtMetadata) enrichedStmts
+            liveness = fmap livenessAfter enrichedStmts
+            writeSet = fmap stmtWriteSet enrichedStmts
         assertEqual "" livenessAfterEx2 (zip liveness writeSet)
     ]

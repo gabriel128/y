@@ -3,8 +3,11 @@
 module Passes.RegisterAlloc where
 
 import Ast.Ast
+import Control.Carrier.State.Strict
 import Data.Set (Set, difference, empty, fromList, union)
+import qualified Data.Set as Set
 import Data.Text (Text)
+import GeneralDS.Graph (Graph, defaultNode, insertEdge, insertNode, newGraph)
 import qualified Passes.PassEffs as PassEffs
 
 {-
@@ -55,6 +58,19 @@ import qualified Passes.PassEffs as PassEffs
                         {}
       jmp conclusion
                         {}
+
+ ## Interference Graph
+
+   Definition:
+      undirected graph whose vertices represent variables and whose edges represent conflicts,
+      i.e., when two vertices are live at the same time.
+
+   The naive approach of inspecting all the livenessAfter set of each statement is generally O(n^2)
+   Also, something like `movq x, y  {w,x,y}` would mark x and y to be conflictive but since it's the
+   same value they can share the same register.
+
+   To make it faster we use heuristics based on writes, check 
+
 -}
 
 -- Caller-save registers (the ones that a procedure can use freely):  rax rdx rcx rsi rdi r8 r9 r10 r11
@@ -71,13 +87,43 @@ type LivenessAfter = Set Text
 
 type ReadsK = Set Text
 
--- Storing the livenessAfter since that's what's going to be used in the interference graph
-data StmtLiveness = StmtLiveness {livenessAfter :: LivenessAfter, stmtWriteSet :: WritesK} deriving (Show, Eq)
-
-data EnrichedStmt = EnrichedStmt {stmtMetadata :: StmtLiveness, stmt :: Stmt} deriving (Show, Eq)
+-- Storing only the livenessAfter per stmt since that's what's going to be used in the interference graph
+data EnrichedStmt = EnrichedStmt {livenessAfter :: LivenessAfter, stmtWriteSet :: WritesK, stmt :: Stmt} deriving (Show, Eq)
 
 allocRegisters :: Program -> PassEffs.StErr sig m Program
-allocRegisters = undefined
+allocRegisters program = do
+  locals <- gets infoLocals
+  let stmts = progStmts program
+  let enrichedStmts = buildLiveness stmts
+  let interfGraph = buildInterferenceGraph locals enrichedStmts
+  undefined
+
+-- Private --
+
+buildInterferenceGraph :: Locals -> [EnrichedStmt] -> Graph Text
+buildInterferenceGraph vars enrichedStmts =
+  let nodes = fmap defaultNode (Set.toList vars)
+      graphWithNodes = foldr insertNode newGraph nodes
+   in foldr applyInterfHeuristics graphWithNodes enrichedStmts
+
+-- | We add an edge between each write and the rest of livenessAfter
+-- 1. For a let stmt (Let d (Var s)), for each v in (livenessAfter / (writeSet U {s}),
+--    add edge (d,v)
+
+-- 2. For an other non call stmts, for each v in (livenessAfter / writeSet),
+--    add edge (d,v)
+
+-- 3. For a call instruction, for each v in L_after,
+--    for each r in caller-save registers if r != v then add edge (r,v)
+
+applyInterfHeuristics :: EnrichedStmt -> Graph Text -> Graph Text
+applyInterfHeuristics EnrichedStmt {livenessAfter, stmtWriteSet, stmt = Let var (Var var')} graph =
+  let otherLiveVars = livenessAfter `Set.difference` (Set.insert var' stmtWriteSet)
+   in foldr (\edge graphAcc -> insertEdge (var, edge) graphAcc) graph (Set.toList otherLiveVars)
+applyInterfHeuristics EnrichedStmt {livenessAfter, stmtWriteSet, stmt = Let var _expr} graph =
+  let otherLiveVars = livenessAfter `Set.difference` stmtWriteSet
+   in foldr (\edge graphAcc -> insertEdge (var, edge) graphAcc) graph (Set.toList otherLiveVars)
+applyInterfHeuristics EnrichedStmt {livenessAfter, stmtWriteSet, stmt} graph = undefined
 
 buildLiveness :: [Stmt] -> [EnrichedStmt]
 buildLiveness stmts = snd $ foldr reducer (empty, []) stmts
@@ -85,9 +131,11 @@ buildLiveness stmts = snd $ foldr reducer (empty, []) stmts
     reducer :: Stmt -> (Set Text, [EnrichedStmt]) -> (Set Text, [EnrichedStmt])
     reducer stmt (livenessAfter, enrichedStmts) =
       let (liveness, writeSet) = buildStmtLiveness stmt livenessAfter
-          enrichedStmt = EnrichedStmt (StmtLiveness livenessAfter writeSet) stmt
+          enrichedStmt = EnrichedStmt livenessAfter writeSet stmt
        in (liveness, enrichedStmt : enrichedStmts)
 
+callerRegisters :: Set Text
+callerRegisters = undefined 
 -- Insights:
 -- in a let expression
 buildStmtLiveness :: Stmt -> LivenessAfter -> (LivenessBefore, WritesK)
@@ -101,7 +149,6 @@ buildStmtLiveness stmt@(Print expr) livenessAfter =
 
 readsFromExpr :: Expr -> Set Text
 readsFromExpr (Const _) = empty
-readsFromExpr (Fn _) = empty
 readsFromExpr (Var binding) = fromList [binding]
 readsFromExpr (UnaryOp _ expr) = readsFromExpr expr
 readsFromExpr (BinOp _ expr expr') = readsFromExpr expr `union` readsFromExpr expr'

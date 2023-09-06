@@ -37,6 +37,9 @@ isValidGraph (Graph graphNodes) =
 newNode :: Ord a => a -> [a] -> Node a
 newNode a edges = Node a (Set.fromList edges)
 
+defaultNode :: Ord a => a -> Node a
+defaultNode a = Node a Set.empty
+
 insertEdge :: Ord a => (a, a) -> Graph a -> Graph a
 insertEdge (nodeIdA, nodeIdB) (Graph nodes) =
   let insertFn nodeId createdNode oldNode = Node nodeId (nodeEdges createdNode `Set.union` nodeEdges oldNode)
