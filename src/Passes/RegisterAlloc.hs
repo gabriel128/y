@@ -69,7 +69,7 @@ import qualified Passes.PassEffs as PassEffs
    Also, something like `movq x, y  {w,x,y}` would mark x and y to be conflictive but since it's the
    same value they can share the same register.
 
-   To make it faster we use heuristics based on writes, check 
+   To make it faster we use heuristics based on writes, check
 
 -}
 
@@ -113,17 +113,24 @@ buildInterferenceGraph vars enrichedStmts =
 -- 2. For an other non call stmts, for each v in (livenessAfter / writeSet),
 --    add edge (d,v)
 
+-- TODO: Since no call yet
 -- 3. For a call instruction, for each v in L_after,
 --    for each r in caller-save registers if r != v then add edge (r,v)
 
+-- 4. For a print instruction, for each v in L_after,
+--    for each r in {rdi, rsi, rax} then add edge (r,v)
+
+-- TODO test it!
 applyInterfHeuristics :: EnrichedStmt -> Graph Text -> Graph Text
 applyInterfHeuristics EnrichedStmt {livenessAfter, stmtWriteSet, stmt = Let var (Var var')} graph =
   let otherLiveVars = livenessAfter `Set.difference` (Set.insert var' stmtWriteSet)
-   in foldr (\edge graphAcc -> insertEdge (var, edge) graphAcc) graph (Set.toList otherLiveVars)
+   in foldr (\liveVar graphAcc -> insertEdge (var, liveVar) graphAcc) graph (Set.toList otherLiveVars)
 applyInterfHeuristics EnrichedStmt {livenessAfter, stmtWriteSet, stmt = Let var _expr} graph =
   let otherLiveVars = livenessAfter `Set.difference` stmtWriteSet
-   in foldr (\edge graphAcc -> insertEdge (var, edge) graphAcc) graph (Set.toList otherLiveVars)
-applyInterfHeuristics EnrichedStmt {livenessAfter, stmtWriteSet, stmt} graph = undefined
+   in foldr (\liveVar graphAcc -> insertEdge (var, liveVar) graphAcc) graph (Set.toList otherLiveVars)
+applyInterfHeuristics EnrichedStmt {livenessAfter, stmtWriteSet, stmt = Print expr} graph =
+  foldr (\liveVar graphAcc -> foldr (\reg graphAcc' -> insertEdge (reg, liveVar) graphAcc') graphAcc ["%rdi", "%rsi"]) graph (Set.toList livenessAfter)
+applyInterfHeuristics EnrichedStmt {livenessAfter, stmtWriteSet, stmt} graph = graph
 
 buildLiveness :: [Stmt] -> [EnrichedStmt]
 buildLiveness stmts = snd $ foldr reducer (empty, []) stmts
@@ -134,10 +141,10 @@ buildLiveness stmts = snd $ foldr reducer (empty, []) stmts
           enrichedStmt = EnrichedStmt livenessAfter writeSet stmt
        in (liveness, enrichedStmt : enrichedStmts)
 
+-- Caller-save registers (the ones that a procedure can use freely): rax rdx rcx rsi rdi r8 r9 r10 r11
 callerRegisters :: Set Text
-callerRegisters = undefined 
--- Insights:
--- in a let expression
+callerRegisters = Set.fromList ["rax", "rdx", "rcx", "rsi", "rdi", "r8", "r9", "r10", "r11"]
+
 buildStmtLiveness :: Stmt -> LivenessAfter -> (LivenessBefore, WritesK)
 buildStmtLiveness (Let binding expr) livenessAfter =
   let writeSet = fromList [binding]
