@@ -35,8 +35,8 @@ newGraph = Graph Map.empty
 isValidGraph :: Ord a => Graph a -> Bool
 isValidGraph (Graph graphNodes) =
   let nodes    = Map.elems graphNodes
-      edges    = foldr Set.union Set.empty . fmap nodeEdges $ nodes
-      nodeVals = foldr Set.insert Set.empty . fmap nodeVal $ nodes
+      edges    = foldr (Set.union . nodeEdges) Set.empty $ nodes
+      nodeVals = foldr (Set.insert . nodeVal) Set.empty $ nodes
   in  edges == nodeVals
 
 newNode :: Ord a => a -> [a] -> Node a

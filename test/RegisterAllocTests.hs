@@ -5,6 +5,8 @@ module RegisterAllocTests
 import           Ast.Ast
 import           Data.Set
 import qualified Data.Text                     as T
+import           Data.Text                      ( Text )
+import           GeneralDS.Graph                ( Graph )
 import           Passes.RegisterAlloc
 import           Test.Tasty                     ( TestTree
                                                 , testGroup
@@ -27,20 +29,25 @@ ex1 =
     Let "c" (Var "a")
   , -- {c}
     Let "b" (Const 10)
-  , -- {b, c}
-    Let "b" (BinOp Add (Var "b") (Var "c")) -- {}
+  , -- {a, c}
+    Let "b" (BinOp Add (Var "a") (Var "c")) -- {}
   ]
 
 enrichedEx1 :: [EnrichedStmt]
 enrichedEx1 =
-  [ EnrichedStmt (fromList ["a"])      (fromList ["a"]) (Let "a" (Const 5))
-  , EnrichedStmt (fromList ["a"])      (fromList ["b"]) (Let "b" (Const 30))
-  , EnrichedStmt (fromList ["c"])      (fromList ["c"]) (Let "c" (Var "a"))
-  , EnrichedStmt (fromList ["b", "c"]) (fromList ["b"]) (Let "b" (Const 10))
-  , EnrichedStmt (fromList [])
-                 (fromList ["b"])
-                 (Let "b" (BinOp Add (Var "b") (Var "c")))
+  [ EnrichedStmt (fromList ["a"])      (Let "a" (Const 5))
+  , EnrichedStmt (fromList ["a"])      (Let "b" (Const 30))
+  , EnrichedStmt (fromList ["a", "c"]) (Let "c" (Var "a"))
+  , EnrichedStmt (fromList ["a", "c"]) (Let "b" (Const 10))
+  , EnrichedStmt (fromList [])         (Let "b" (BinOp Add (Var "a") (Var "c")))
   ]
+
+-- interferenceGraphEx1 :: Graph Text
+-- interferenceGraphEx1 =
+--   let nodeA = Node "a" (Set.fromList ["b", "c"])
+--       nodeB = Node "b" (Set.fromList ["c"])
+--       nodeC = Node "c" (Set.fromList ["a"])
+--   in  Graph (fromList [("a", nodeA), ("b", nodeB), ("c", nodeC)])
 
 ex2 :: [Stmt]
 ex2 =
@@ -55,19 +62,14 @@ ex2 =
     Return (Var "a") -- {}
   ]
 
-livenessAfterEx2 :: [(Set T.Text, Set T.Text)]
+livenessAfterEx2 :: [Set T.Text]
 livenessAfterEx2 =
-  [ (fromList ["a"], fromList ["a"])
-  , (fromList ["a"], fromList ["b"])
-  , (fromList ["a"], fromList ["c"])
-  , (fromList ["a"], fromList ["d"])
-  , (fromList []   , empty)
-  ]
+  [fromList ["a"], fromList ["a"], fromList ["a"], fromList ["a"], fromList []]
 
 unitTests :: TestTree
 unitTests = testGroup
   "Register Allocation tests"
-  [ testCase "livness doesn't modify order of stmts" $ do
+  [ testCase "liveness doesn't modify order of stmts" $ do
     let enrichedStmts = buildLiveness ex1
     assertEqual "" (fmap stmt enrichedEx1) (fmap stmt enrichedStmts)
   , testCase "liveness_ex1" $ do
@@ -76,6 +78,7 @@ unitTests = testGroup
   , testCase "liveness_ex2" $ do
     let enrichedStmts = buildLiveness ex2
         liveness      = fmap livenessAfter enrichedStmts
-        writeSet      = fmap stmtWriteSet enrichedStmts
-    assertEqual "" livenessAfterEx2 (zip liveness writeSet)
+    assertEqual "" livenessAfterEx2 liveness
+  , testCase "builds interferece graph for ex1" $ do
+    assertEqual "" True False
   ]

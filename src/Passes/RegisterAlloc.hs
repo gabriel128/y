@@ -2,13 +2,23 @@
 
 module Passes.RegisterAlloc where
 
-import Ast.Ast
-import Control.Carrier.State.Strict
-import Data.Set (Set, difference, empty, fromList, union)
-import qualified Data.Set as Set
-import Data.Text (Text)
-import GeneralDS.Graph (Graph, defaultNode, insertEdge, insertNode, newGraph)
-import qualified Passes.PassEffs as PassEffs
+import           Ast.Ast
+import           Control.Carrier.State.Strict
+import           Data.Set                       ( Set
+                                                , difference
+                                                , empty
+                                                , fromList
+                                                , union
+                                                )
+import qualified Data.Set                      as Set
+import           Data.Text                      ( Text )
+import           GeneralDS.Graph                ( Graph
+                                                , defaultNode
+                                                , insertEdge
+                                                , insertNode
+                                                , newGraph
+                                                )
+import qualified Passes.PassEffs               as PassEffs
 
 {-
   # Register Allocation
@@ -88,32 +98,41 @@ type LivenessAfter = Set Text
 type ReadsK = Set Text
 
 -- Storing only the livenessAfter per stmt since that's what's going to be used in the interference graph
-data EnrichedStmt = EnrichedStmt {livenessAfter :: LivenessAfter, stmtWriteSet :: WritesK, stmt :: Stmt} deriving (Show, Eq)
+data EnrichedStmt = EnrichedStmt
+  { livenessAfter :: LivenessAfter
+  , stmt          :: Stmt
+  }
+  deriving (Show, Eq)
+
+-- Caller-save registers (the ones that a procedure can use freely): rax rdx rcx rsi rdi r8 r9 r10 r11
+callerSavedRegisters :: Set Text
+callerSavedRegisters =
+  Set.fromList ["rax", "rdx", "rcx", "rsi", "rdi", "r8", "r9", "r10", "r11"]
 
 allocRegisters :: Program -> PassEffs.StErr sig m Program
 allocRegisters program = do
   locals <- gets infoLocals
-  let stmts = progStmts program
+  let stmts         = progStmts program
   let enrichedStmts = buildLiveness stmts
-  let interfGraph = buildInterferenceGraph locals enrichedStmts
+  let interfGraph   = buildInterferenceGraph locals enrichedStmts
   undefined
 
 -- Private --
 
 buildInterferenceGraph :: Locals -> [EnrichedStmt] -> Graph Text
 buildInterferenceGraph vars enrichedStmts =
-  let nodes = fmap defaultNode (Set.toList vars)
+  let nodes          = fmap defaultNode (Set.toList vars)
       graphWithNodes = foldr insertNode newGraph nodes
-   in foldr applyInterfHeuristics graphWithNodes enrichedStmts
+  in  foldr applyInterfHeuristics graphWithNodes enrichedStmts
 
 -- | We add an edge between each write and the rest of livenessAfter
--- 1. For a let stmt (Let d (Var s)), for each v in (livenessAfter / (writeSet U {s}),
+-- 1. For a let stmt (Let d (Var s)), for each v in (livenessAfter / {d, s}),
 --    add edge (d,v)
 
--- 2. For an other non call stmts, for each v in (livenessAfter / writeSet),
+-- 2. For an other non move stmts, for each v in (livenessAfter / writeSet),
 --    add edge (d,v)
 
--- TODO: Since no call yet
+-- TODO: No call yet
 -- 3. For a call instruction, for each v in L_after,
 --    for each r in caller-save registers if r != v then add edge (r,v)
 
@@ -122,45 +141,60 @@ buildInterferenceGraph vars enrichedStmts =
 
 -- TODO test it!
 applyInterfHeuristics :: EnrichedStmt -> Graph Text -> Graph Text
-applyInterfHeuristics EnrichedStmt {livenessAfter, stmtWriteSet, stmt = Let var (Var var')} graph =
-  let otherLiveVars = livenessAfter `Set.difference` (Set.insert var' stmtWriteSet)
-   in foldr (\liveVar graphAcc -> insertEdge (var, liveVar) graphAcc) graph (Set.toList otherLiveVars)
-applyInterfHeuristics EnrichedStmt {livenessAfter, stmtWriteSet, stmt = Let var _expr} graph =
-  let otherLiveVars = livenessAfter `Set.difference` stmtWriteSet
-   in foldr (\liveVar graphAcc -> insertEdge (var, liveVar) graphAcc) graph (Set.toList otherLiveVars)
-applyInterfHeuristics EnrichedStmt {livenessAfter, stmtWriteSet, stmt = Print expr} graph =
-  foldr (\liveVar graphAcc -> foldr (\reg graphAcc' -> insertEdge (reg, liveVar) graphAcc') graphAcc ["%rdi", "%rsi"]) graph (Set.toList livenessAfter)
-applyInterfHeuristics EnrichedStmt {livenessAfter, stmtWriteSet, stmt} graph = graph
+-- Move var to var statement
+applyInterfHeuristics EnrichedStmt { livenessAfter, stmt = Let var (Var var') } graph
+  = let otherLiveVars =
+          livenessAfter `Set.difference` (Set.fromList [var, var'])
+    in  foldr (\liveVar graphAcc -> insertEdge (var, liveVar) graphAcc)
+              graph
+              (Set.toList otherLiveVars)
+-- Non move statement, i.e. some expression result assigned to a var
+applyInterfHeuristics EnrichedStmt { livenessAfter, stmt = Let var _expr } graph
+  = let otherLiveVars = livenessAfter `Set.difference` (Set.fromList [var])
+    in  foldr (\liveVar graphAcc -> insertEdge (var, liveVar) graphAcc)
+              graph
+              (Set.toList otherLiveVars)
+-- print Statemet, we added the used registers by the print call (we should add
+-- caller-saved registers but we all)
+applyInterfHeuristics EnrichedStmt { livenessAfter, stmt = Print expr } graph =
+  foldr
+    (\liveVar graphAcc -> foldr
+      (\reg graphAcc' -> insertEdge (reg, liveVar) graphAcc')
+      graphAcc
+      callerSavedRegisters
+    )
+    graph
+    (Set.toList livenessAfter)
+applyInterfHeuristics EnrichedStmt { livenessAfter, stmt } graph = graph
 
 buildLiveness :: [Stmt] -> [EnrichedStmt]
 buildLiveness stmts = snd $ foldr reducer (empty, []) stmts
-  where
-    reducer :: Stmt -> (Set Text, [EnrichedStmt]) -> (Set Text, [EnrichedStmt])
-    reducer stmt (livenessAfter, enrichedStmts) =
-      let (liveness, writeSet) = buildStmtLiveness stmt livenessAfter
-          enrichedStmt = EnrichedStmt livenessAfter writeSet stmt
-       in (liveness, enrichedStmt : enrichedStmts)
+ where
+  reducer :: Stmt -> (Set Text, [EnrichedStmt]) -> (Set Text, [EnrichedStmt])
+  reducer stmt (livenessAfter, enrichedStmts) =
+    let liveness     = buildStmtLiveness stmt livenessAfter
+        enrichedStmt = EnrichedStmt livenessAfter stmt
+    in  (liveness, enrichedStmt : enrichedStmts)
 
--- Caller-save registers (the ones that a procedure can use freely): rax rdx rcx rsi rdi r8 r9 r10 r11
-callerRegisters :: Set Text
-callerRegisters = Set.fromList ["rax", "rdx", "rcx", "rsi", "rdi", "r8", "r9", "r10", "r11"]
 
-buildStmtLiveness :: Stmt -> LivenessAfter -> (LivenessBefore, WritesK)
+buildStmtLiveness :: Stmt -> LivenessAfter -> LivenessBefore
 buildStmtLiveness (Let binding expr) livenessAfter =
   let writeSet = fromList [binding]
-   in (livenessBefore livenessAfter writeSet (readsFromExpr expr), writeSet)
+  in  livenessBefore livenessAfter writeSet (readsFromExpr expr)
 buildStmtLiveness stmt@(Return expr) livenessAfter =
-  (livenessBefore livenessAfter empty (readsFromExpr expr), empty)
+  livenessBefore livenessAfter empty (readsFromExpr expr)
 buildStmtLiveness stmt@(Print expr) livenessAfter =
-  (livenessBefore livenessAfter empty (readsFromExpr expr), empty)
+  livenessBefore livenessAfter empty (readsFromExpr expr)
 
 readsFromExpr :: Expr -> Set Text
-readsFromExpr (Const _) = empty
-readsFromExpr (Var binding) = fromList [binding]
+readsFromExpr (Const _       ) = empty
+readsFromExpr (Var   binding ) = fromList [binding]
 readsFromExpr (UnaryOp _ expr) = readsFromExpr expr
-readsFromExpr (BinOp _ expr expr') = readsFromExpr expr `union` readsFromExpr expr'
+readsFromExpr (BinOp _ expr expr') =
+  readsFromExpr expr `union` readsFromExpr expr'
 
 -- L_before(k) = (L_after(k) - W(k)) U R(k)
 -- where W(k) means writes for line k and R(k) means for reads for linke k
 livenessBefore :: LivenessAfter -> WritesK -> ReadsK -> Set Text
-livenessBefore livenessAfter writesK readsK = (livenessAfter `difference` writesK) `union` readsK
+livenessBefore livenessAfter writesK readsK =
+  (livenessAfter `difference` writesK) `union` readsK
