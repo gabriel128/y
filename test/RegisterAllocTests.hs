@@ -2,11 +2,12 @@ module RegisterAllocTests
   ( test_reg_alloc
   ) where
 
+
 import           Ast.Ast
+import qualified Data.Set                      as Set
 import           Data.Set
 import qualified Data.Text                     as T
-import           Data.Text                      ( Text )
-import           GeneralDS.Graph                ( Graph )
+import           GeneralDS.Graph
 import           Passes.RegisterAlloc
 import           Test.Tasty                     ( TestTree
                                                 , testGroup
@@ -15,6 +16,8 @@ import           Test.Tasty.HUnit               ( assertBool
                                                 , assertEqual
                                                 , testCase
                                                 )
+
+import qualified Data.Map                      as Map
 
 test_reg_alloc :: TestTree
 test_reg_alloc = testGroup "Tests" [unitTests]
@@ -42,12 +45,12 @@ enrichedEx1 =
   , EnrichedStmt (fromList [])         (Let "b" (BinOp Add (Var "a") (Var "c")))
   ]
 
--- interferenceGraphEx1 :: Graph Text
--- interferenceGraphEx1 =
---   let nodeA = Node "a" (Set.fromList ["b", "c"])
---       nodeB = Node "b" (Set.fromList ["c"])
---       nodeC = Node "c" (Set.fromList ["a"])
---   in  Graph (fromList [("a", nodeA), ("b", nodeB), ("c", nodeC)])
+interferenceGraphEx1 :: Graph T.Text
+interferenceGraphEx1 =
+  let nodeA = Node "a" (Set.fromList ["b"])
+      nodeB = Node "b" (Set.fromList ["a", "c"])
+      nodeC = Node "c" (Set.fromList ["b"])
+  in  Graph (Map.fromList [("a", nodeA), ("b", nodeB), ("c", nodeC)])
 
 ex2 :: [Stmt]
 ex2 =
@@ -80,5 +83,8 @@ unitTests = testGroup
         liveness      = fmap livenessAfter enrichedStmts
     assertEqual "" livenessAfterEx2 liveness
   , testCase "builds interferece graph for ex1" $ do
-    assertEqual "" True False
+    let enrichedStmts    = buildLiveness ex1
+    let nodes            = Set.fromList ["a", "b", "c"]
+    let interfereceGraph = buildInterferenceGraph nodes enrichedStmts
+    assertEqual "" interferenceGraphEx1 interfereceGraph
   ]
