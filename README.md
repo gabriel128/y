@@ -1,3 +1,9 @@
+# **ARCHIVED**
+
+I Love you haskell but the tooling got in the way @#$!@#$!@#$
+
+This project will continue as `y` and it'll be written in rust [TODO put link]
+
 # YACLL 
 
 Yet another C like language
