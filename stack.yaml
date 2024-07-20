@@ -13,3 +13,11 @@ extra-deps:
 #   - string-random-0.1.4.2
 
 # allow-newer: true
+# docker:
+#   enable: true
+#   repo: "fpco/stack-build:lts-18.28"
+#   mount-mode: delegated
+  # persist: true
+  # network: host
+  # run-args: ["--net=bridge"]
+  # stack-exe: download
