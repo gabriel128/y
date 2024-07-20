@@ -10,7 +10,7 @@ test_full_progs = testGroup "Tests" [unitTests]
 
 compileFile :: String -> String -> IO String
 compileFile inFile outFile =
-  readProcess "stack" ["run", "--", "-i", inFile, "-o", outFile] []
+  readProcess "/home/gabriel/.local/bin/stack" ["run", "--", "-i", inFile, "-o", outFile] []
 
 runFile :: String -> IO String
 runFile file = readProcess file [] []
@@ -19,8 +19,7 @@ compileAndRun :: String -> IO String
 compileAndRun progName = do
   compRes <- compileFile ("./examples/" <> progName <> ".yacll") ("./test/results/" <> progName)
   assertBool compRes ("Compilation successful" `isInfixOf` compRes)
-  -- Make path generic
-  runRes <- runFile ("./test/results/" <> progName)
+  runRes <- runFile ("/home/gabriel/dev/workspaces/yacll/test/results/" <> progName)
   pure runRes
 
 unitTests :: TestTree

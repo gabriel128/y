@@ -15,13 +15,13 @@ main:
     call conclusion
 
 start:
-  mov qword [rbp-24], 9 
-  mov qword [rbp-16], 7 
-  mov rax, [rbp-16] 
+  mov qword [rbp-32], 9 
+  mov qword [rbp-24], 7 
+  mov rax, [rbp-24] 
   sub rax, 8 
-  mov qword [rbp-32], rax 
-  mov rax, [rbp-32] 
-  add rax, [rbp-24] 
+  mov qword [rbp-16], rax 
+  mov rax, [rbp-16] 
+  add rax, [rbp-32] 
   mov qword [rbp-8], rax 
   mov rdi, printf_format 
   mov rsi, [rbp-8] 
