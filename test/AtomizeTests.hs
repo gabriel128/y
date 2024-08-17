@@ -11,7 +11,7 @@ import Passes.AtomizeAst
 import Passes.PassEffs
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
-import Context (Context (..))
+import Context (Context (..), defaultContext)
 
 -- import Test.Tasty.SmallCheck as SC
 

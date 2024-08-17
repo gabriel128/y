@@ -34,6 +34,7 @@ import Context (Context, addLocal)
 -- >>> import qualified Passes.PassEffs as PassEffs
 -- >>> import Passes.PassEffs (runStErr)
 -- >>> import Data.Either (fromRight)
+-- >>> import Context (Context, defaultContext)
 
 runRemComplexStmts :: Context -> Program -> Either Text (Context, Program)
 runRemComplexStmts info program = run . runError . runState info $ removeComplexStmts program
@@ -83,7 +84,7 @@ removeComplexExp expr' =
     expr -> pure ([], expr)
 
 -- | Creates a single let statement, it will have the shape of tmp_x where x is an incremental number
--- >>> runStErr defaultContext $ runFresh 0 $ createLetBinding (Const 3) (BinOp Add (Const 4))
+-- >>> runStErr Context.defaultContext $ runFresh 0 $ createLetBinding (Const 3) (BinOp Add (Const 4))
 -- Right (Context {ctxLocals = fromList ["tmp_0"], ctxStackOffset = 0},(1,([Let "tmp_0" (Const 3)],BinOp Add (Const 4) (Var "tmp_0"))))
 createLetBinding :: Expr -> (Expr -> Expr) -> PassEffs.StErrRnd sig m ([Stmt], Expr)
 createLetBinding expr expConstr = do
@@ -93,7 +94,7 @@ createLetBinding expr expConstr = do
   pure (stmts ++ [Let varName expr'], expConstr (Var varName))
 
 -- | Utility function to create two let bindings at one from one
--- >>> runStErr defaulContext $ runFresh 0 $ createDoubleLetBinding (Const 3) (Const 4) (BinOp Add)
+-- >>> runStErr defaultContext $ runFresh 0 $ createDoubleLetBinding (Const 3) (Const 4) (BinOp Add)
 -- Right (Context {ctxLocals = fromList ["tmp_0","tmp_1"], ctxStackOffset = 0},(2,([Let "tmp_0" (Const 3),Let "tmp_1" (Const 4)],BinOp Add (Var "tmp_0") (Var "tmp_1"))))
 createDoubleLetBinding :: Expr -> Expr -> (Expr -> Expr -> Expr) -> PassEffs.StErrRnd sig m ([Stmt], Expr)
 createDoubleLetBinding exprL exprR expConstr = do

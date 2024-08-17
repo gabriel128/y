@@ -1,7 +1,11 @@
 .PHONY: test
 
+docker-build-86_64_cache:
+	docker build --target dependencies --cache-from y/app-dependencies:latest -f ./x86_64/Dockerfile -t y/app-dependencies .
+	docker push y/app-dependencies:latest
+
 docker-build-x86_64:
-	cd x86_64; docker build -t y-x86_64 .
+	docker build --target build --cache-from y/app-dependencies:latest -t y_x86_64 -f ./x86_64/Dockerfile .
 
 docker-x86_64:
 	cd x86_64; ./start_docker.sh
