@@ -10,7 +10,7 @@ import Test.Tasty (TestTree, defaultMain, testGroup)
 
 main :: IO ()
 main = do
-  mainFromCabal "yacll" []
+  mainFromCabal "y" []
   -- doctests
   defaultMain tests
 

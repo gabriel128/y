@@ -2,7 +2,6 @@
 
 module Passes.X86ToTextProg where
 
-import Ast.Ast (Info (infoStackOffset))
 import Control.Carrier.State.Strict
 import Data.List (intersperse)
 import Data.Text (Text, pack)
@@ -11,10 +10,11 @@ import qualified Nasm.Data as Nasm
 import NeatInterpolation
 import qualified Passes.PassEffs as PassEffs
 import Utils
+import qualified Context
 
 instrsToText :: [Nasm.Instr] -> PassEffs.StErr sig m Text
 instrsToText intrs = do
-  stackOffset <- gets infoStackOffset
+  stackOffset <- gets Context.ctxStackOffset
   let textInstrs = printInstrs intrs
   pure (programTemplate textInstrs stackOffset)
 

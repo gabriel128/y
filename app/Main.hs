@@ -42,10 +42,10 @@ runCompiler ::
   String ->
   String ->
   m ()
-runCompiler yacllFile outFile = do
+runCompiler yFile outFile = do
   let asmFile = outFile <> ".asm"
   let objFile = outFile <> ".o"
-  contents <- readFromFile yacllFile
+  contents <- readFromFile yFile
 
   -- Compile!
   (_info, asmOutput) <- liftEither . left unpack $ parseAndCompile (pack contents)
@@ -57,11 +57,11 @@ runCompiler yacllFile outFile = do
   printLn $ "Asm Finished " <> out
   printLn "Linking..."
 
-  lOut <- readFromProcess "gcc" [objFile, "-no-pie", "-z", "noexecstack", "-o", outFile] []
+  lOut <- readFromProcess "gcc" [objFile, "-z", "noexecstack", "-o", outFile] []
   printLn $ "Linking Finished" <> lOut
 
-replaceYacllExt :: String -> String -> Either String String
-replaceYacllExt yacllFile newExt = go . reverse $ yacllFile
+replaceYExt :: String -> String -> Either String String
+replaceYExt yFile newExt = go . reverse $ yFile
   where
-    go ('l' : 'l' : 'c' : 'a' : 'y' : '.' : rest) = Right (reverse rest <> newExt)
-    go _ = Left "Extension it's not yacll match"
+    go ('y' : '.' : rest) = Right (reverse rest <> newExt)
+    go _ = Left "Extension it's not _y_ lang, why?"

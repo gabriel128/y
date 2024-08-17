@@ -16,6 +16,8 @@ import qualified Data.Set as Set
 import Data.Text (Text, pack)
 import Nasm.Data as Nasm
 import qualified Passes.PassEffs as PassEffs
+import Context (Context (..))
+import qualified Context
 
 -- $setup
 
@@ -24,9 +26,9 @@ type LocalStackMap = M.Map Text MemDeref
 
 astToNasm :: Program -> PassEffs.StErr sig m [Nasm.Instr]
 astToNasm prog = do
-  localVars <- gets @Info infoLocalsList
+  localVars <- gets @Context Context.localsList
   let (stackOffset, varsStackMapping) = mapVarsToBspOffset localVars
-  put (Info (Set.fromList localVars) (alignStack16 stackOffset))
+  put (Context (Set.fromList localVars) (alignStack16 stackOffset))
   (_, instrs) <- runState @LocalStackMap varsStackMapping $ fromStmtsToInstrs (progStmts prog)
   pure instrs
 

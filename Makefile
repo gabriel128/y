@@ -1,13 +1,16 @@
 .PHONY: test
 
-docker-build:
-	docker build -t haskell-yacll .
+docker-build-86_64_cache:
+	docker build --target dependencies --cache-from y/app-dependencies:latest -f ./x86_64/Dockerfile -t y/app-dependencies .
 
-docker-bash:
-	docker run -it -w /home/stackage/yacll -v /Users/gabriel/dev/yacll:/home/stackage/yacll haskell-yacll
+docker-build-x86_64:
+	docker build --target build --cache-from y/app-dependencies:latest -t y_x86_64 -f ./x86_64/Dockerfile .
+
+docker-x86_64:
+	cd x86_64; ./start_docker.sh
 
 test:
 	stack test --file-watch --fast 
 
-# test-specific:
-# stack test --file-watch --fast --ta "-p /liveness for ex1/
+test-specific:
+	stack test --file-watch --fast --ta "-p /liveness for ex1/
