@@ -4,14 +4,14 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           yacll
+name:           y
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/yacll#readme>
-homepage:       https://github.com/githubuser/yacll#readme
-bug-reports:    https://github.com/githubuser/yacll/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2022 Author name here
+description:    Please see the README on GitHub at <https://github.com/githubuser/y#readme>
+homepage:       https://github.com/github.com/gabriel128#readme
+bug-reports:    https://github.com/github.com/gabriel128/issues
+author:         Gabriel Torello
+maintainer:     Gabriel Torello
+copyright:      2022 Gabriel Torello
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -21,7 +21,8 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/yacll
+  location: https://github.com/github.com/gabriel128
+  subdir: y
 
 library
   exposed-modules:
@@ -45,7 +46,7 @@ library
       Passes.X86ToTextProg
       Utils
   other-modules:
-      Paths_yacll
+      Paths_y
   hs-source-dirs:
       src
   default-extensions:
@@ -82,7 +83,7 @@ library
     , text
   default-language: Haskell2010
 
-executable yacll-exe
+executable y-exe
   main-is: Main.hs
   hs-source-dirs:
       app
@@ -119,10 +120,10 @@ executable yacll-exe
     , process
     , random
     , text
-    , yacll
+    , y
   default-language: Haskell2010
 
-test-suite yacll-test
+test-suite y-test
   type: exitcode-stdio-1.0
   main-is: TestLoader.hs
   other-modules:
@@ -133,7 +134,7 @@ test-suite yacll-test
       NasmTests
       ParserTests
       RegisterAllocTests
-      Paths_yacll
+      Paths_y
   hs-source-dirs:
       test
   default-extensions:
@@ -174,5 +175,5 @@ test-suite yacll-test
     , tasty-hunit
     , tasty-quickcheck
     , text
-    , yacll
+    , y
   default-language: Haskell2010

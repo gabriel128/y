@@ -1,6 +1,14 @@
-# YACLL 
+# _Y_ 
 
-Yet another C like language
+They _Y_ programming language. 
+
+It's pronounced "why?!!", because people kept asking Why would
+I write a native compiler. Why did you do it in Haskell initially?
+Why was it originally called yacll? Just Why?
+
+## Why?
+
+That's a question I keep asking myself every day, also "How?"
 
 # Passes
 
@@ -13,10 +21,10 @@ representation. It goes from Ast to Nasm
 3. X86ToTextProg - Picks the NASM IR and transforms it to a final text, used to generate an .asm 
 later on
 
-# How to compile a .yacll file
+# How to compile a .y file
 
 ```
-yacll -o output_binary_file_name -i program.yacll
+y -o output_binary_file_name -i program.y
 ```
 
 # Effects
@@ -27,8 +35,25 @@ This project represents effects using fused-effects.
 
 check the /examples folder.
 
+# Build and run docker for X86_64
+
+Build
+
+``` sh
+make docker-build-86_64_cache
+make docker-build-x86_64
+```
+
+Run
+
+``` sh
+make docker-x86_64
+```
+
 # Tests
 
+They are meant to run in the docker container. 
+
 ```
-stack test --file-watch --fast
+make test
 ```

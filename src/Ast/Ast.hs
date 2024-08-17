@@ -1,7 +1,5 @@
 module Ast.Ast where
 
-import Data.Set (Set)
-import qualified Data.Set as Set
 import qualified Data.Text as T
 
 data Func = Func {funcId :: T.Text, funcArgs :: [Expr]}

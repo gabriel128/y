@@ -1,5 +1,5 @@
 ghc-options:
-  yacll: -Wall
+  y: -Wall
 packages:
 - .
 resolver: lts-22.33

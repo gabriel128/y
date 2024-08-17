@@ -17,7 +17,7 @@ runFile file = readProcess file [] []
 
 compileAndRun :: String -> IO String
 compileAndRun progName = do
-  compRes <- compileFile ("./examples/" <> progName <> ".yacll") ("./test/results/" <> progName)
+  compRes <- compileFile ("./examples/" <> progName <> ".y") ("./test/results/" <> progName)
   assertBool compRes ("Compilation successful" `isInfixOf` compRes)
   runRes <- runFile ("./test/results/" <> progName)
   pure runRes
@@ -36,9 +36,9 @@ unitTests =
         runRes <- compileAndRun "redef"
         assertEqual "" "17\n" runRes,
       testCase "Compilation error" $ do
-        compRes <- compileFile "./examples/comp_err.yacll" "./test/results/comp_err"
+        compRes <- compileFile "./examples/comp_err.y" "./test/results/comp_err"
         assertBool compRes ("expecting identifier or white space" `isInfixOf` compRes),
       testCase "Compilation error 2" $ do
-        compRes <- compileFile "./examples/comp_err2.yacll" "./test/results/comp_err"
+        compRes <- compileFile "./examples/comp_err2.y" "./test/results/comp_err"
         assertBool compRes ("unexpected ')" `isInfixOf` compRes)
     ]

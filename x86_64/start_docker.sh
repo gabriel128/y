@@ -9,7 +9,7 @@ elif [ "$( docker container inspect -f '{{.State.Running}}' "$name" )" = "false"
     docker start $name
     docker exec -it $name /bin/bash
 else
-    docker run -d -w /home/stackage/yacll --name $name -v /Users/gabriel/dev/yacll:/home/stackage/yacll $name
+    docker run -d -w /home/stackage/y --name $name -v $HOME/dev/y:/home/stackage/y $name
     docker exec -it $name /bin/bash
 fi
 
