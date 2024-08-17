@@ -5,29 +5,29 @@
 
 packages:
 - completed:
-    hackage: doctest-parallel-0.2.4@sha256:87183137417ec2322ee640e53d918cf5cfbce3254b37cc1ee38d05c6ab15e907,5858
+    hackage: doctest-parallel-0.3.1.1@sha256:55a85eb97f028ee9bc8896111559f04da0029c59710f9f4befa2911d49fc54d0,6121
     pantry-tree:
-      size: 7976
-      sha256: a795f237cf3b34c9ca2e72c41bae6d6ca1ddbcc02dbc30000ba3359a0150b792
+      sha256: e8c8a8dc5cba48ff3bd4752dcdddd3846783f95133b882c4ef57230d8fc6d2a7
+      size: 8335
   original:
-    hackage: doctest-parallel-0.2.4
+    hackage: doctest-parallel-0.3.1.1
 - completed:
-    hackage: fused-effects-1.1.2.0@sha256:76aa0f8dee7a73f51e9889a70016473e3552367f885071c7951584870ed2d9e5,5246
+    hackage: fused-effects-1.1.2.2@sha256:a799c9c40892a68bfacaacdf19cddf992cc0b4f5e0cb3f2a99544e02ec306c32,5804
     pantry-tree:
+      sha256: 7da3dce776fa639804e320725e036208865d2f964ae5731ccc385d6e319ca960
       size: 6845
-      sha256: ba172fc862c5eef060deffc4bd27af42048d44e92291f495e3c203a77d055905
   original:
-    hackage: fused-effects-1.1.2.0
+    hackage: fused-effects-1.1.2.2
 - completed:
-    hackage: Cabal-3.6.3.0@sha256:ff97c442b0c679c1c9876acd15f73ac4f602b973c45bde42b43ec28265ee48f4,12459
+    hackage: Cabal-3.10.3.0@sha256:4a36954a66769eef90353daa0dbb07d43e49c228281383c7e4134445d495f714,12313
     pantry-tree:
-      size: 19757
-      sha256: b250a53bdb56844f047a2927833bb565b936a289abfa85dfc2a63148d776368a
+      sha256: 1d8835f47d5a86a326a4997ce77f7bfd78d732a483264deaf0c280e8d2b764b7
+      size: 9222
   original:
-    hackage: Cabal-3.6.3.0
+    hackage: Cabal-3.10.3.0
 snapshots:
 - completed:
-    size: 590100
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/28.yaml
-    sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68
-  original: lts-18.28
+    sha256: 098936027eaa1ef14e2b8eb39d9933a973894bb70a68684a1bbf00730249879b
+    size: 720001
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/33.yaml
+  original: lts-22.33

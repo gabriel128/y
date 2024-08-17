@@ -11,6 +11,7 @@ import Passes.AtomizeAst
 import Passes.PassEffs
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
+import Context (Context (..))
 
 -- import Test.Tasty.SmallCheck as SC
 
@@ -23,29 +24,29 @@ expr =
       ast1_1 = BinOp Add (Const 42) negEight
    in ast1_1
 
-runComplexStmts :: [Stmt] -> (Info, Program)
-runComplexStmts stmts = fromRight' $ runStErr defaultInfo (removeComplexStmts (newProgram stmts))
+runComplexStmts :: [Stmt] -> (Context, Program)
+runComplexStmts stmts = fromRight' $ runStErr defaultContext (removeComplexStmts (newProgram stmts))
 
 unitTests :: TestTree
 unitTests =
   testGroup
     "ListStack"
     [ testCase "remove complex ops do nothing when not needed" $
-        let (Info locals 0, prog) = runComplexStmts [Let "x" (Const 8)]
+        let (Context locals 0, prog) = runComplexStmts [Let "x" (Const 8)]
             expected = Program [Let "x" (Const 8)]
          in do
               assertEqual "" locals (Set.fromList ["x"])
               assertEqual "" prog expected,
       --
       testCase "remove complex ops do nothing with more complex ops but still atomic" $
-        let (Info locals 0, prog) = runComplexStmts [Let "x" (UnaryOp Neg (Const 8))]
+        let (Context locals 0, prog) = runComplexStmts [Let "x" (UnaryOp Neg (Const 8))]
             expected = newProgram [Let "x" (UnaryOp Neg (Const 8))]
          in do
               assertEqual "" locals (Set.fromList ["x"])
               assertEqual "" prog expected,
       -- --
       testCase "remove complex ops on Unary" $
-        let (Info locals 0, prog) = runComplexStmts [Let "x" (UnaryOp Neg (UnaryOp Neg (Const 8)))]
+        let (Context locals 0, prog) = runComplexStmts [Let "x" (UnaryOp Neg (UnaryOp Neg (Const 8)))]
             [var', "x"] = Set.toAscList locals
          in case prog of
               Program
@@ -59,7 +60,7 @@ unitTests =
               [ Let "x" (UnaryOp Neg (UnaryOp Neg (Const 8))),
                 Let "y" (UnaryOp Neg (UnaryOp Neg (Const 8)))
               ]
-            (Info locals 0, prog) = runComplexStmts stmts
+            (Context locals 0, prog) = runComplexStmts stmts
          in case prog of
               Program
                 [ Let "tmp_0" (UnaryOp Neg (Const 8)),
@@ -84,7 +85,7 @@ unitTests =
       -- -- --
       testCase "remove complex ops on Binary ops" $
         let stmts = [Let "x" (BinOp Add (Const 10) (UnaryOp Neg (Const 8)))]
-            (Info locals 0, atomStmts) = runComplexStmts stmts
+            (Context locals 0, atomStmts) = runComplexStmts stmts
          in case progStmts atomStmts of
               [ Let "tmp_0" (UnaryOp Neg (Const 8)),
                 Let "x" (BinOp Add (Const 10) (Var "tmp_0"))
@@ -99,7 +100,7 @@ unitTests =
               [ Let "x" (BinOp Add (Const 10) (Const 8)),
                 Let "x" (BinOp Add (Const 11) (Const 9))
               ]
-            (Info locals 0, atomStmts) = runComplexStmts stmts
+            (Context locals 0, atomStmts) = runComplexStmts stmts
          in case progStmts atomStmts of
               [ Let "x" (BinOp Add (Const 10) (Const 8)),
                 Let "x" (BinOp Add (Const 11) (Const 9))
@@ -111,7 +112,7 @@ unitTests =
       ------
       testCase "remove expr on Print" $
         let stmts = [Print (BinOp Add (Const 10) (Const 8))]
-            (Info locals 0, atomStmts) = runComplexStmts stmts
+            (Context locals 0, atomStmts) = runComplexStmts stmts
             [lvar] = Set.toAscList locals
          in case progStmts atomStmts of
               [Let lvar' (BinOp Add (Const 10) (Const 8)), Print (Var lvar'')] ->
@@ -121,7 +122,7 @@ unitTests =
       -- -- --
       testCase "remove more complex ops on Binary ops" $
         let stmts = [Let "x" (BinOp Add (UnaryOp Neg (Const 8)) (Const 10))]
-            (Info locals 0, atomStmts) = runComplexStmts stmts
+            (Context locals 0, atomStmts) = runComplexStmts stmts
             [lvar, "x"] = Set.toAscList locals
          in case progStmts atomStmts of
               [Let var (UnaryOp Neg (Const 8)), Let "x" (BinOp Add (Var var1) (Const 10))] ->
@@ -131,7 +132,7 @@ unitTests =
       -- -- --
       testCase "remove even more complex ops on Binary ops" $
         let stmts = [Let "x" (BinOp Add (UnaryOp Neg (Const 8)) (UnaryOp Neg (Const 10)))]
-            (Info locals 0, atomStmts) = runComplexStmts stmts
+            (Context locals 0, atomStmts) = runComplexStmts stmts
             [lvar, lvar1, "x"] = Set.toAscList locals
          in case progStmts atomStmts of
               res@[Let var (UnaryOp Neg (Const 8)), Let var1 (UnaryOp Neg (Const 10)), Let "x" (BinOp Add (Var var') (Var var1'))] -> do

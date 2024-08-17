@@ -2,13 +2,14 @@ ghc-options:
   yacll: -Wall
 packages:
 - .
-resolver:  lts-18.28
+resolver: lts-22.33
+  # lts-18.28
   # compiler: ghc-8.10.7
 
 extra-deps:
-  - doctest-parallel-0.2.4
-  - fused-effects-1.1.2.0
-  - Cabal-3.6.3.0
+  - doctest-parallel-0.3.1.1
+  - fused-effects-1.1.2.2
+  - Cabal-3.10.3.0
 #   - either-5.0.2
 #   - string-random-0.1.4.2
 

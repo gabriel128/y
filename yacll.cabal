@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -27,6 +27,7 @@ library
   exposed-modules:
       Ast.Ast
       Ast.Examples
+      Context
       Experiments
       GeneralDS.Graph
       GeneralDS.Queue
@@ -67,11 +68,11 @@ library
       UndecidableInstances
       RankNTypes
   build-depends:
-      base >=4.7 && <5
+      base >=4.9 && <4.20
     , cmdargs
     , containers
     , either
-    , fused-effects >=1.1.2.0
+    , fused-effects >=1.1.2.2
     , megaparsec
     , mtl
     , neat-interpolation
@@ -106,11 +107,11 @@ executable yacll-exe
       RankNTypes
   ghc-options: -Werror -Wall -Wincomplete-uni-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      base >=4.9 && <4.20
     , cmdargs
     , containers
     , either
-    , fused-effects >=1.1.2.0
+    , fused-effects >=1.1.2.2
     , megaparsec
     , mtl
     , neat-interpolation
@@ -156,12 +157,12 @@ test-suite yacll-test
       RankNTypes
   ghc-options: -Wall -Wincomplete-uni-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      base >=4.9 && <4.20
     , cmdargs
     , containers
     , doctest-parallel
     , either
-    , fused-effects >=1.1.2.0
+    , fused-effects >=1.1.2.2
     , megaparsec
     , mtl
     , neat-interpolation

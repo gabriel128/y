@@ -1,13 +1,13 @@
 .PHONY: test
 
-docker-build:
-	docker build -t haskell-yacll .
+docker-build-x86_64:
+	cd x86_64; docker build -t y-x86_64 .
 
-docker-bash:
-	docker run -it -w /home/stackage/yacll -v /Users/gabriel/dev/yacll:/home/stackage/yacll haskell-yacll
+docker-x86_64:
+	cd x86_64; ./start_docker.sh
 
 test:
 	stack test --file-watch --fast 
 
-# test-specific:
-# stack test --file-watch --fast --ta "-p /liveness for ex1/
+test-specific:
+	stack test --file-watch --fast --ta "-p /liveness for ex1/

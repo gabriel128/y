@@ -61,7 +61,7 @@ instance MonadTIO m => MonadTIO (EitherT e m) where
   liftTIO = liftT . liftTIO
 
 instance MonadPrinter IO where
-  printLn xs = putStrLn xs
+  printLn = putStrLn
 
 instance (MonadTIO m, MonadT t) => MonadPrinter (t m) where
   printLn xs = liftT . liftTIO $ putStrLn xs

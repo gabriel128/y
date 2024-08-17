@@ -57,7 +57,7 @@ runCompiler yacllFile outFile = do
   printLn $ "Asm Finished " <> out
   printLn "Linking..."
 
-  lOut <- readFromProcess "gcc" [objFile, "-no-pie", "-z", "noexecstack", "-o", outFile] []
+  lOut <- readFromProcess "gcc" [objFile, "-z", "noexecstack", "-o", outFile] []
   printLn $ "Linking Finished" <> lOut
 
 replaceYacllExt :: String -> String -> Either String String
