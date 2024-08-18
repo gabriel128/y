@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-unused-matches #-}
 
-module Passes.RegisterAlloc where
+module Optimizations.RegisterAlloc where
 
 import Ast.Ast
 import Data.Set (Set, difference, empty, fromList, union)

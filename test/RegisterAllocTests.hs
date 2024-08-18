@@ -2,8 +2,8 @@ module RegisterAllocTests (test_reg_alloc) where
 
 import Ast.Ast
 import Data.Set
-import Passes.RegisterAlloc
-import Passes.RegisterAlloc (stmt)
+import Optimizations.RegisterAlloc
+import Optimizations.RegisterAlloc (stmt)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
 

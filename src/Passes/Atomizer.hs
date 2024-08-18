@@ -12,7 +12,7 @@
 -- let y = (2 + (3 + 4)); let x = 1 + y
 -- =>
 -- let z = 3 + 4; let y = 2 + z; let x = 1 + y
-module Passes.AtomizeAst where
+module Passes.Atomizer where
 
 import Ast.Ast
 import Control.Carrier.Error.Either
@@ -60,17 +60,17 @@ removeComplexStmts (Program stmts) = fmap snd $
 removeComplexStmt :: Stmt -> PassEffs.StErrRnd sig m [Stmt]
 removeComplexStmt stmt =
   case stmt of
-    Return expr | isAtomic expr -> do
-      (letStmts, lastExpr) <- letsFromComplexExp expr
-      pure (letStmts ++ [Return lastExpr])
+    stmt'@(Return expr) | isAtomic expr -> pure [stmt']
+    stmt'@(Print expr) | isAtomic expr -> pure [stmt']
+    stmt'@(Let binding expr) | isAtomic expr -> do
+      modify (Context.addLocal binding)
+      pure [stmt']
+
     Return expr -> do
       (letStmts, lastExpr) <- letsFromComplexExp expr
       varName <- Utils.freshVarName fresh
       modify (Context.addLocal varName)
       pure (letStmts ++ [Let varName lastExpr, Return (Var varName)])
-    Print expr | isAtomic expr ->  do
-      (letStmts, lastExpr) <- letsFromComplexExp expr
-      pure (letStmts ++ [Print lastExpr])
     Print expr -> do
       (letStmts, lastExpr) <- letsFromComplexExp expr
       varName <- Utils.freshVarName fresh
@@ -92,7 +92,9 @@ letsFromComplexExp expr' =
     BinOp op exprL exprR -> createDoubleLetBinding exprL exprR (BinOp op)
     expr -> pure ([], expr)
 
--- | Creates a single let statement, it will have the shape of tmp_x where x is an incremental number
+-- | Creates a single let statement, it will have the shape of tmp_x
+--   where x is an incremental number
+
 -- >>> runStErr Context.defaultContext $ runFresh 0 $ createLetBinding (Const 3) (BinOp Add (Const 4))
 -- Right (Context {ctxLocals = fromList ["tmp_0"], ctxStackOffset = 0},(1,([Let "tmp_0" (Const 3)],BinOp Add (Const 4) (Var "tmp_0"))))
 createLetBinding :: Expr -> (Expr -> Expr) -> PassEffs.StErrRnd sig m ([Stmt], Expr)
