@@ -43,7 +43,6 @@ buildStmtLiveness stmt@(Print expr) livenessAfter =
 
 readsFromExpr :: Expr -> Set Text
 readsFromExpr (Const _) = empty
-readsFromExpr (Fn _) = empty
 readsFromExpr (Var binding) = fromList [binding]
 readsFromExpr (UnaryOp _ expr) = readsFromExpr expr
 readsFromExpr (BinOp _ expr expr') = readsFromExpr expr `union` readsFromExpr expr'

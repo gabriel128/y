@@ -56,7 +56,7 @@ mapVarsToBspOffset = foldr reducer (0, M.empty) . reverse
        in (n - 8, amap')
 
 getStackMapping :: (Has (State LocalStackMap) sig m, (Has (Throw Text) sig m)) => Text -> m MemDeref
-getStackMapping binding = gets (lookupEither binding) >>= liftEither >>= pure
+getStackMapping binding = gets (lookupEither binding) >>= liftEither
 
 fromStmtsToInstrs :: (Has (State LocalStackMap) sig m, (Has (Throw Text) sig m)) => [Stmt] -> m [Instr]
 fromStmtsToInstrs = foldl' reducer (pure [])

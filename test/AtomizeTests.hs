@@ -119,6 +119,16 @@ unitTests =
                 assertBool "tmp vars are not equal" (lvar == lvar' && lvar' == lvar'')
               res ->
                 assertBool ("It didn't construct the correct tmp vars, got: " <> show res) False,
+      ---
+      testCase "remove complex expr on Return" $
+        let stmts = [Return (BinOp Add (Const 10) (Const 8))]
+            (Context locals 0, atomStmts) = runComplexStmts stmts
+            [lvar] = Set.toAscList locals
+         in case progStmts atomStmts of
+              [Let lvar' (BinOp Add (Const 10) (Const 8)), Return (Var lvar'')] ->
+                assertBool "tmp vars are not equal" (lvar == lvar' && lvar' == lvar'')
+              res ->
+                assertBool ("It didn't construct the correct tmp vars, got: " <> show res) False,
       -- -- --
       testCase "remove more complex ops on Binary ops" $
         let stmts = [Let "x" (BinOp Add (UnaryOp Neg (Const 8)) (Const 10))]
