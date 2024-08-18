@@ -44,11 +44,11 @@ lookupEither binding mapping = maybeToRight ("Var not bound: " <> binding) (M.lo
 
 -- | Assigns a base pointer offset to each variable
 -- >>> mapVarsToBspOffset ["x", "y"]
--- (-16,fromList [("x",Deref Rbp (-16)),("y",Deref Rbp (-8))])
+-- (-16,fromList [("x",Deref Rbp (-8)),("y",Deref Rbp (-16))])
 -- >>> mapVarsToBspOffset ["x"]
 -- (-8,fromList [("x",Deref Rbp (-8))])
 mapVarsToBspOffset :: [Text] -> (Offset, LocalStackMap)
-mapVarsToBspOffset = foldr reducer (0, M.empty)
+mapVarsToBspOffset = foldr reducer (0, M.empty) . reverse
   where
     reducer :: Text -> (Offset, LocalStackMap) -> (Offset, LocalStackMap)
     reducer local (n, amap) =
