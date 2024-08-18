@@ -14,7 +14,7 @@ That's a question I keep asking myself every day, also "How?"
 
 The compiler goes through a couple of passes and intermediate representations
 
-1. AtomizeAst - Removes all the complex expressions and leave them in an atomic shape.
+1. Atomizer - Removes all the complex expressions and leave them in an atomic shape.
 It is from Ast to Ast
 2. StmtsToX86 - Pick the stmts from the AST and convert it to a type-safe NASM intermediate
 representation. It goes from Ast to Nasm

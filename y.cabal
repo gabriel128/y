@@ -37,11 +37,11 @@ library
       Lib
       LocalMtl
       Nasm.Data
+      Optimizations.RegisterAlloc
       Parser.Defs
       Parser.Parser
-      Passes.AtomizeAst
+      Passes.Atomizer
       Passes.PassEffs
-      Passes.RegisterAlloc
       Passes.StmtsToX86
       Passes.X86ToTextProg
       Utils

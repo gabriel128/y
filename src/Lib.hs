@@ -3,7 +3,7 @@ module Lib where
 import Ast.Ast (Program)
 import Data.Text (Text)
 import Parser.Parser (runProgramParser)
-import Passes.AtomizeAst (removeComplexStmts)
+import Passes.Atomizer (removeComplexStmts)
 import Passes.PassEffs (runStErr)
 import qualified Passes.PassEffs as PassEffs
 import Passes.StmtsToX86 (astToNasm)

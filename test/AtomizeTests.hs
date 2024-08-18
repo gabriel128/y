@@ -7,7 +7,7 @@ module AtomizeTests (test_id_ir) where
 import Ast.Ast
 import Data.Either.Combinators
 import qualified Data.Set as Set
-import Passes.AtomizeAst
+import Passes.Atomizer
 import Passes.PassEffs
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
@@ -116,6 +116,16 @@ unitTests =
             [lvar] = Set.toAscList locals
          in case progStmts atomStmts of
               [Let lvar' (BinOp Add (Const 10) (Const 8)), Print (Var lvar'')] ->
+                assertBool "tmp vars are not equal" (lvar == lvar' && lvar' == lvar'')
+              res ->
+                assertBool ("It didn't construct the correct tmp vars, got: " <> show res) False,
+      ---
+      testCase "remove complex expr on Return" $
+        let stmts = [Return (BinOp Add (Const 10) (Const 8))]
+            (Context locals 0, atomStmts) = runComplexStmts stmts
+            [lvar] = Set.toAscList locals
+         in case progStmts atomStmts of
+              [Let lvar' (BinOp Add (Const 10) (Const 8)), Return (Var lvar'')] ->
                 assertBool "tmp vars are not equal" (lvar == lvar' && lvar' == lvar'')
               res ->
                 assertBool ("It didn't construct the correct tmp vars, got: " <> show res) False,
