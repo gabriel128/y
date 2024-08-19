@@ -68,7 +68,7 @@ unitTests =
                   Let "tmp_1" (UnaryOp Neg (Const 8)),
                   Let "y" (UnaryOp Neg (Var "tmp_1"))
                   ] -> do
-                  assertEqual "info is incorrect" locals (Set.fromList ["tmp_0", "x", "tmp_1", "y"])
+                  assertEqual "info is incorrect" (Set.fromList ["tmp_0", "x", "tmp_1", "y"]) locals
                   assertBool "tmp vars are not equal" True
               res -> assertBool ("It didn't construct the correct tmp vars, got: " <> show res) False,
       -- -- --
