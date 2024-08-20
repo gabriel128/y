@@ -23,4 +23,4 @@ type StateErrorRndEffM state error m a =
 
 -- | Utility function to extract the state and the error out of the effect
 runStateErrorEff :: state -> StateC state (ErrorC errorType Identity) a -> Either errorType (state, a)
-runStateErrorEff someState = run . runError . runState someState
+runStateErrorEff someState = run . runError  . runState someState

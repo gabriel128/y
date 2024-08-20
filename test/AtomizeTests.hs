@@ -12,6 +12,7 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
 import Context (Context (..), defaultContext)
 import EffUtils (runStateErrorEff)
+import Data.Text (Text)
 
 -- import Test.Tasty.SmallCheck as SC
 
@@ -25,7 +26,10 @@ expr =
    in ast1_1
 
 runComplexStmts :: [Stmt] -> (Context, Program)
-runComplexStmts stmts = fromRight' $ runStateErrorEff defaultContext (removeComplexStmts (newProgram stmts))
+runComplexStmts = fromRight' . run
+  where
+    run :: [Stmt] -> Either Text (Context, Program)
+    run stmts = runStateErrorEff defaultContext (removeComplexStmts (newProgram stmts))
 
 unitTests :: TestTree
 unitTests =
