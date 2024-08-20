@@ -8,10 +8,10 @@ import Ast.Ast
 import Data.Either.Combinators
 import qualified Data.Set as Set
 import Passes.Atomizer
-import Passes.PassEffs
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
 import Context (Context (..), defaultContext)
+import EffUtils (runStateErrorEff)
 
 -- import Test.Tasty.SmallCheck as SC
 
@@ -25,7 +25,7 @@ expr =
    in ast1_1
 
 runComplexStmts :: [Stmt] -> (Context, Program)
-runComplexStmts stmts = fromRight' $ runStErr defaultContext (removeComplexStmts (newProgram stmts))
+runComplexStmts stmts = fromRight' $ runStateErrorEff defaultContext (removeComplexStmts (newProgram stmts))
 
 unitTests :: TestTree
 unitTests =
@@ -68,7 +68,7 @@ unitTests =
                   Let "tmp_1" (UnaryOp Neg (Const 8)),
                   Let "y" (UnaryOp Neg (Var "tmp_1"))
                   ] -> do
-                  assertEqual "info is incorrect" locals (Set.fromList ["tmp_0", "x", "tmp_1", "y"])
+                  assertEqual "info is incorrect" (Set.fromList ["tmp_0", "x", "tmp_1", "y"]) locals
                   assertBool "tmp vars are not equal" True
               res -> assertBool ("It didn't construct the correct tmp vars, got: " <> show res) False,
       -- -- --

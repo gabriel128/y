@@ -3,20 +3,19 @@ module Lib where
 import Ast.Ast (Program)
 import Data.Text (Text)
 import Parser.Parser (runProgramParser)
-import Passes.Atomizer (removeComplexStmts)
-import Passes.PassEffs (runStErr)
-import qualified Passes.PassEffs as PassEffs
-import Passes.StmtsToX86 (astToNasm)
-import Passes.X86ToTextProg (instrsToText)
+import qualified Passes.Atomizer as Atomizer
+import EffUtils (runStateErrorEff, StateErrorEff)
 import Context (Context, defaultContext)
+import qualified Passes.StmtsToX86 as StmtsToX86
+import qualified Passes.X86ToTextProg
 
 parseAndCompile :: Text -> Either Text (Context, Text)
 parseAndCompile text = do
   prog <- runProgramParser text
-  runStErr Context.defaultContext (passes prog)
+  runStateErrorEff Context.defaultContext (passes prog)
 
-passes :: Program -> PassEffs.StErr sig m Text
+passes :: Program -> StateErrorEff Context Text Text
 passes prog = do
-  prog' <- removeComplexStmts prog
-  nasmInstrs <- astToNasm prog'
-  instrsToText nasmInstrs
+  prog' <- Atomizer.removeComplexStmts prog
+  nasmInstrs <- StmtsToX86.astToNasm prog'
+  Passes.X86ToTextProg.instrsToText nasmInstrs

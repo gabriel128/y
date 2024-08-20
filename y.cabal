@@ -29,6 +29,7 @@ library
       Ast.Ast
       Ast.Examples
       Context
+      EffUtils
       Experiments
       GeneralDS.Graph
       GeneralDS.Queue
@@ -41,7 +42,7 @@ library
       Parser.Defs
       Parser.Parser
       Passes.Atomizer
-      Passes.PassEffs
+      Passes.Error
       Passes.StmtsToX86
       Passes.X86ToTextProg
       Utils

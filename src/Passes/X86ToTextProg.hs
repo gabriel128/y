@@ -8,11 +8,12 @@ import Data.Text (Text, pack)
 import qualified Data.Text as T
 import qualified Nasm.Data as Nasm
 import NeatInterpolation
-import qualified Passes.PassEffs as PassEffs
+import EffUtils (StateErrorRndEff, StateErrorEff)
 import Utils
 import qualified Context
+import Context (Context)
 
-instrsToText :: [Nasm.Instr] -> PassEffs.StErr sig m Text
+instrsToText :: [Nasm.Instr] -> StateErrorEff Context Text Text
 instrsToText intrs = do
   stackOffset <- gets Context.ctxStackOffset
   let textInstrs = printInstrs intrs
