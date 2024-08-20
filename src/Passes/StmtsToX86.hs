@@ -55,10 +55,10 @@ mapVarsToBspOffset = foldr reducer (0, M.empty) . reverse
       let amap' = M.insert local (Deref Rbp (n - 8)) amap
        in (n - 8, amap')
 
-getStackMapping :: (Has (State LocalStackMap) sig m, (Has (Throw Text) sig m)) => Text -> m MemDeref
+getStackMapping ::  Text -> StateErrorEff LocalStackMap Text MemDeref
 getStackMapping binding = gets (lookupEither binding) >>= liftEither
 
-fromStmtsToInstrs :: (Has (State LocalStackMap) sig m, (Has (Throw Text) sig m)) => [Stmt] -> m [Instr]
+fromStmtsToInstrs ::  [Stmt] -> StateErrorEff LocalStackMap Text [Instr]
 fromStmtsToInstrs = foldl' reducer (pure [])
   where
     reducer instrs stmt = do
@@ -66,75 +66,109 @@ fromStmtsToInstrs = foldl' reducer (pure [])
       newInstrs <- fromStmtToInstrs stmt
       pure $ prevInstrs ++ newInstrs
 
-fromStmtToInstrs :: (Has (State LocalStackMap) sig m, (Has (Throw Text) sig m)) => Stmt -> m [Instr]
--- let x = 3;
-fromStmtToInstrs (Let binding (Const num)) = do
-  x <- getStackMapping binding
-  pure [Mov x num]
+fromStmtToInstrs :: Stmt -> StateErrorEff LocalStackMap Text [Instr]
+fromStmtToInstrs stmt =
+  case stmt of
+    -- let x = 3;
+    (Let binding (Const num)) -> do
+      x <- getStackMapping binding
+      pure [Mov x num]
 
--- x = y; -> mov rax y; mov x rax
-fromStmtToInstrs (Let binding (Var binding2)) = do
-  x <- getStackMapping binding
-  y <- getStackMapping binding2
-  pure [Mov Rax y, Mov x Rax]
--- return 4;
-fromStmtToInstrs (Return (Const num)) =
-  pure [Mov Rax num, Ret]
--- return x;
-fromStmtToInstrs (Return (Var binding)) =
-  getStackMapping binding >>= (\x -> pure [Mov Rax x, Ret])
--- print 3
-fromStmtToInstrs (Print (Const num)) =
-  pure [Mov Rdi printFormatLabel, Mov Rsi num, Xor Rax Rax, Call "printf WRT ..plt"]
--- print x
-fromStmtToInstrs (Print (Var binding)) =
-  getStackMapping binding
-    >>= (\x -> pure [Mov Rdi printFormatLabel, Mov Rsi x, Xor Rax Rax, Call "printf WRT ..plt"])
--- Handle addition
--- x = 2 + 2; -> mov x, 2; add x, 2
-fromStmtToInstrs (Let binding (BinOp Ast.Add (Const num1) (Const num2))) = do
-  x <- getStackMapping binding
-  pure [Mov x num1, Nasm.Add x num2]
--- x = 2 + y; -> mov rax, y; add rax, 2; mov x rax
--- x = 2 + x; -> add x, 2
-fromStmtToInstrs (Let binding (BinOp Ast.Add (Const num) (Var binding2))) = do
-  x <- getStackMapping binding
-  y <- getStackMapping binding2
-  let z = (2 :: Int)
-  if binding == binding2
-    then pure [Nasm.Add x z]
-    else pure [Mov Rax y, Nasm.Add Rax num, Mov x Rax]
--- Add is commutative so we just call the above definition
-fromStmtToInstrs (Let binding (BinOp Ast.Add (Var binding2) (Const num))) =
-  fromStmtToInstrs (Let binding (BinOp Ast.Add (Const num) (Var binding2)))
--- x = z + y; -> mov rax, z; add rax, y; mov x, rax
-fromStmtToInstrs (Let binding (BinOp Ast.Add (Var binding1) (Var binding2))) = do
-  x <- getStackMapping binding
-  y <- getStackMapping binding1
-  z <- getStackMapping binding2
-  pure [Mov Rax z, Nasm.Add Rax y, Mov x Rax]
+    -- x = y; -> mov rax y; mov x rax
+    (Let binding (Var binding2)) -> do
+      x <- getStackMapping binding
+      y <- getStackMapping binding2
+      pure [Mov Rax y,
+            Mov x Rax]
 
--- Handle substaction
--- x = 2 - 2 -> mov x, 2; sub x, 2
-fromStmtToInstrs (Let binding (BinOp Ast.Sub (Const num1) (Const num2))) = do
-  x <- getStackMapping binding
-  pure [Mov x num1, Nasm.Sub x num2]
--- x = 2 - y -> mov rax, 2; sub rax, y; mov x rax
-fromStmtToInstrs (Let binding (BinOp Ast.Sub (Const num) (Var binding2))) = do
-  x <- getStackMapping binding
-  y <- getStackMapping binding2
-  pure [Mov Rax num, Nasm.Sub Rax y, Mov x Rax]
--- x = y - 2 -> mov rax, y; sub rax, 2; mov x rax
-fromStmtToInstrs (Let binding (BinOp Ast.Sub (Var binding2) (Const num))) = do
-  x <- getStackMapping binding
-  y <- getStackMapping binding2
-  pure [Mov Rax y, Nasm.Sub Rax num, Mov x Rax]
--- x = z - y -> mov rax, z; sub rax, y; mov x, rax
-fromStmtToInstrs (Let binding (BinOp Ast.Sub (Var binding1) (Var binding2))) = do
-  x <- getStackMapping binding
-  y <- getStackMapping binding1
-  z <- getStackMapping binding2
-  pure [Mov Rax z, Nasm.Sub Rax y, Mov x Rax]
+    -- return 4;
+    (Return (Const num)) ->
+      pure [Mov Rax num,
+            Ret]
 
--- -- Unhandled
-fromStmtToInstrs stmt = throwError (pack $ "Unhandled stmt: " <> show stmt)
+    -- return x;
+    (Return (Var binding)) -> do
+      x <- getStackMapping binding
+      pure [Mov Rax x,
+            Ret]
+
+    -- print 3
+    (Print (Const num)) ->
+      pure [Mov Rdi printFormatLabel,
+            Mov Rsi num,
+            Xor Rax Rax,
+            Call "printf WRT ..plt"]
+    -- print x
+    (Print (Var binding)) -> do
+      x <- getStackMapping binding
+      pure [Mov Rdi printFormatLabel,
+            Mov Rsi x,
+            Xor Rax Rax,
+            Call "printf WRT ..plt"]
+
+    -- Handle addition
+    -- x = 2 + 2; -> mov x, 2; add x, 2
+    (Let binding (BinOp Ast.Add (Const num1) (Const num2))) -> do
+      x <- getStackMapping binding
+      pure [Mov x num1,
+            Nasm.Add x num2]
+
+    -- x = 2 + y; -> mov rax, y; add rax, 2; mov x rax
+    -- x = 2 + x; -> add x, 2
+    (Let binding (BinOp Ast.Add (Const num) (Var binding2))) -> do
+      x <- getStackMapping binding
+      y <- getStackMapping binding2
+      let z = (2 :: Int)
+      if binding == binding2
+        then pure [Nasm.Add x z]
+        else pure [Mov Rax y,
+                   Nasm.Add Rax num,
+                   Mov x Rax]
+
+    -- Add is commutative so we just call the above definition
+    (Let binding (BinOp Ast.Add (Var binding2) (Const num))) ->
+      fromStmtToInstrs (Let binding (BinOp Ast.Add (Const num) (Var binding2)))
+
+    -- x = z + y; -> mov rax, z; add rax, y; mov x, rax
+    (Let binding (BinOp Ast.Add (Var binding1) (Var binding2))) -> do
+      x <- getStackMapping binding
+      y <- getStackMapping binding1
+      z <- getStackMapping binding2
+      pure [Mov Rax z,
+            Nasm.Add Rax y,
+            Mov x Rax]
+
+    -- Handle substaction
+    -- x = 2 - 2 -> mov x, 2; sub x, 2
+    (Let binding (BinOp Ast.Sub (Const num1) (Const num2))) -> do
+      x <- getStackMapping binding
+      pure [Mov x num1,
+            Nasm.Sub x num2]
+
+    -- x = 2 - y -> mov rax, 2; sub rax, y; mov x rax
+    (Let binding (BinOp Ast.Sub (Const num) (Var binding2))) -> do
+      x <- getStackMapping binding
+      y <- getStackMapping binding2
+      pure [Mov Rax num,
+            Nasm.Sub Rax y,
+            Mov x Rax]
+
+    -- x = y - 2 -> mov rax, y; sub rax, 2; mov x rax
+    (Let binding (BinOp Ast.Sub (Var binding2) (Const num))) -> do
+      x <- getStackMapping binding
+      y <- getStackMapping binding2
+      pure [Mov Rax y,
+            Nasm.Sub Rax num,
+            Mov x Rax]
+
+    -- x = z - y -> mov rax, z; sub rax, y; mov x, rax
+    (Let binding (BinOp Ast.Sub (Var binding1) (Var binding2))) -> do
+      x <- getStackMapping binding
+      y <- getStackMapping binding1
+      z <- getStackMapping binding2
+      pure [Mov Rax z,
+            Nasm.Sub Rax y,
+            Mov x Rax]
+
+    -- -- Unhandled
+    stmt' -> throwError (pack $ "Unhandled stmt: " <> show stmt')
