@@ -15,16 +15,16 @@ import qualified Data.Map as M
 import qualified Data.Set as Set
 import Data.Text (Text, pack)
 import Nasm.Data as Nasm
-import qualified Passes.PassEffs as PassEffs
 import Context (Context (..))
 import qualified Context
+import EffUtils (StateErrorEff)
 
 -- $setup
 
 -- Map from variables to stack offets
 type LocalStackMap = M.Map Text MemDeref
 
-astToNasm :: Program -> PassEffs.StErr sig m [Nasm.Instr]
+astToNasm :: Program -> StateErrorEff Context Text [Nasm.Instr]
 astToNasm prog = do
   localVars <- gets @Context Context.localsList
   let (stackOffset, varsStackMapping) = mapVarsToBspOffset localVars

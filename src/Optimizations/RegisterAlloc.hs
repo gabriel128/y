@@ -5,7 +5,8 @@ module Optimizations.RegisterAlloc where
 import Ast.Ast
 import Data.Set (Set, difference, empty, fromList, union)
 import Data.Text (Text)
-import qualified Passes.PassEffs as PassEffs
+import EffUtils (StateErrorEff)
+import Context (Context)
 
 -- Available Registers  rbx rcx rdx rsi rdi r8 r9 r10 r11 r12 r13 r14
 
@@ -21,7 +22,7 @@ newtype StmtMetadata = StmtMetadata {liveness :: Set Text} deriving (Show, Eq)
 
 data EnrichedStmt = EnrichedStmt {stmtMetadata :: StmtMetadata, stmt :: Stmt} deriving (Show, Eq)
 
-allocRegisters :: Program -> PassEffs.StErr sig m Program
+allocRegisters :: Program -> StateErrorEff Context Text Program
 allocRegisters = undefined
 
 buildLiveness :: [Stmt] -> [EnrichedStmt]

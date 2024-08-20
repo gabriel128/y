@@ -1,6 +1,3 @@
-{-# LANGUAGE RankNTypes #-}
-
--- |
 -- Atomizer
 --
 -- removes complex expressions in statments
@@ -20,21 +17,9 @@ import Control.Carrier.Fresh.Strict
 import Control.Carrier.State.Strict
 import Data.Foldable
 import Data.Text (Text)
-import qualified Passes.PassEffs as PassEffs
 import Utils
 import Context (Context, addLocal)
-
--- Setup Doc test
-
--- $setup
--- >>> import Ast.Ast
--- >>> import Control.Carrier.Error.Either
--- >>> import Control.Carrier.Fresh.Strict
--- >>> import Control.Carrier.State.Strict
--- >>> import qualified Passes.PassEffs as PassEffs
--- >>> import Passes.PassEffs (runStErr)
--- >>> import Data.Either (fromRight)
--- >>> import Context (Context, defaultContext)
+import EffUtils (StateErrorRndEff, StateErrorEff, StateErrorEffM, StateErrorRndEffM)
 
 -- Extracts the Context and Program from the effects
 runRemComplexStmts :: Context -> Program -> Either Text (Context, Program)
@@ -42,14 +27,14 @@ runRemComplexStmts info program = run . runError . runState info $ removeComplex
 
 --  === Public Api ===
 
-removeComplexStmts :: Program -> PassEffs.StErr sig m Program
+removeComplexStmts :: Program -> StateErrorEffM Context Text m Program
 removeComplexStmts (Program stmts) = fmap snd $
   runFresh 0 $ do
     stmts' <- foldl' reducer (pure []) stmts
     addBindsToContext stmts'
     pure (Program stmts')
   where
-    reducer :: PassEffs.StErrRnd sig m [Stmt] -> Stmt -> PassEffs.StErrRnd sig m [Stmt]
+    reducer :: StateErrorRndEffM Context Text m [Stmt] -> Stmt -> StateErrorRndEffM Context Text m [Stmt]
     reducer prevStmts stmt = do
       prevStmts' <- prevStmts
       stmts' <- removeComplexStmt stmt
@@ -57,21 +42,16 @@ removeComplexStmts (Program stmts) = fmap snd $
 
 -- === Private ====
 
-addBindsToContext :: [Stmt] -> PassEffs.StErr sig m ()
-addBindsToContext [] = pure ()
-addBindsToContext (x : stmts) =
-    case x of
-      Let binding _ -> do
-        modify (Context.addLocal binding)
-        addBindsToContext stmts
-        pure ()
-      _stmt -> do
-        addBindsToContext stmts
-        pure ()
+addBindsToContext :: [Stmt] -> StateErrorEff Context Text ()
+addBindsToContext = mapM_ mapper
+  where
+    mapper :: Stmt -> StateErrorEff Context Text ()
+    mapper (Let binding _) = modify @Context (Context.addLocal binding)
+    mapper _ = pure ()
 
 
 --  Transform a complex statment (i.e. statements that are not atomic) into sequential let bindings
-removeComplexStmt :: Stmt -> PassEffs.StErrRnd sig m [Stmt]
+removeComplexStmt :: Stmt -> StateErrorRndEff Context Text [Stmt]
 removeComplexStmt stmt =
   case stmt of
     stmt'@(Return expr) | isAtomic expr -> pure [stmt']
@@ -91,7 +71,7 @@ removeComplexStmt stmt =
       pure (stmts ++ [Let binding lastExpr])
 
 -- Creates let statements from complex expressions
-letsFromComplexExp :: Expr -> PassEffs.StErrRnd sig m ([Stmt], Expr)
+letsFromComplexExp :: Expr -> StateErrorRndEff Context Text ([Stmt], Expr)
 letsFromComplexExp expr' =
   case expr' of
     expr | isReduced expr -> pure ([], expr)
@@ -104,14 +84,14 @@ letsFromComplexExp expr' =
 -- | Creates a single let statement, it will have the shape of tmp_x
 --   where x is an incremental number
 
-createLetBinding :: Expr -> (Expr -> Expr) -> PassEffs.StErrRnd sig m ([Stmt], Expr)
+createLetBinding :: Expr -> (Expr -> Expr) -> StateErrorRndEff Context Text ([Stmt], Expr)
 createLetBinding expr expConstr = do
   varName <- Utils.freshVarName fresh
   (stmts, expr') <- letsFromComplexExp expr
   pure (stmts ++ [Let varName expr'], expConstr (Var varName))
 
 -- | Utility function to create two let bindings at one from one
-createDoubleLetBinding :: Expr -> Expr -> (Expr -> Expr -> Expr) -> PassEffs.StErrRnd sig m ([Stmt], Expr)
+createDoubleLetBinding :: Expr -> Expr -> (Expr -> Expr -> Expr) -> StateErrorRndEff Context Text ([Stmt], Expr)
 createDoubleLetBinding exprL exprR expConstr = do
   varNameL <- Utils.freshVarName fresh
   varNameR <- Utils.freshVarName fresh
