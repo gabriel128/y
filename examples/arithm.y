@@ -1,6 +1,6 @@
-let x := 9;
-let y := 7;
-let z := (x + (y - 8));
+let x: int = 9;
+let y: int = 7;
+let z: int = (x + (y - 8));
 
 print(z);
 

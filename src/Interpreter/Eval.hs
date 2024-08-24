@@ -17,19 +17,19 @@ createEnv = empty
 
 --- Interpreter
 interpExpr :: Env -> Expr -> Either T.Text Int
-interpExpr _ (Const n) = Right n
+interpExpr _ (Const _ty n) = Right n
 -- interpExpr env (ExprCall (Func {funcId = "read_input"})) = Right 42
 interpExpr env (UnaryOp Neg expr) = fmap (0 -) (interpExpr env expr)
 interpExpr env (BinOp Add left right) = (+) <$> interpExpr env left <*> interpExpr env right
 interpExpr env (BinOp Sub left right) = (-) <$> interpExpr env left <*> interpExpr env right
-interpExpr env (Var binding) = maybeToRight ("Can't find variable " <> binding) (M.lookup binding env)
+interpExpr env (Var _ty binding) = maybeToRight ("Can't find variable " <> binding) (M.lookup binding env)
 interpExpr _ expr = Left (T.pack ("Error interpreting expression: " <> show expr))
 
 emptyStmtResult :: StmtResult
 emptyStmtResult = StmtResult empty Nothing
 
 interpStmt :: Env -> Stmt -> Either T.Text StmtResult
-interpStmt env (Let binding expr) = do
+interpStmt env (Let _ty binding expr) = do
   exprRes <- interpExpr env expr
   let env' = M.insert binding exprRes env
   pure (StmtResult env' Nothing)

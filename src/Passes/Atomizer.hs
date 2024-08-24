@@ -20,6 +20,7 @@ import Data.Text (Text)
 import Utils
 import Context (Context, addLocal)
 import EffUtils (StateErrorRndEff, StateErrorEff, StateErrorEffM, StateErrorRndEffM)
+import Types.Defs (Type(TyToInfer))
 
 -- Extracts the Context and Program from the effects
 runRemComplexStmts :: Context -> Program -> Either Text (Context, Program)
@@ -46,7 +47,7 @@ addBindsToContext :: [Stmt] -> StateErrorEff Context Text ()
 addBindsToContext = mapM_ mapper
   where
     mapper :: Stmt -> StateErrorEff Context Text ()
-    mapper (Let binding _) = modify @Context (Context.addLocal binding)
+    mapper (Let _ binding _) = modify @Context (Context.addLocal binding)
     mapper _ = pure ()
 
 
@@ -56,19 +57,19 @@ removeComplexStmt stmt =
   case stmt of
     stmt'@(Return expr) | isAtomic expr -> pure [stmt']
     stmt'@(Print expr) | isAtomic expr -> pure [stmt']
-    stmt'@(Let _ expr) | isAtomic expr -> pure [stmt']
+    stmt'@(Let _ _ expr) | isAtomic expr -> pure [stmt']
 
     Return expr -> do
       (letStmts, lastExpr) <- letsFromComplexExp expr
       varName <- Utils.freshVarName fresh
-      pure (letStmts ++ [Let varName lastExpr, Return (Var varName)])
+      pure (letStmts ++ [Let TyToInfer varName lastExpr, Return (Var TyToInfer varName)])
     Print expr -> do
       (letStmts, lastExpr) <- letsFromComplexExp expr
       varName <- Utils.freshVarName fresh
-      pure (letStmts ++ [Let varName lastExpr, Print (Var varName)])
-    Let binding expr -> do
+      pure (letStmts ++ [Let TyToInfer varName lastExpr, Print (Var TyToInfer varName)])
+    Let ty binding expr -> do
       (stmts, lastExpr) <- letsFromComplexExp expr
-      pure (stmts ++ [Let binding lastExpr])
+      pure (stmts ++ [Let TyToInfer binding lastExpr])
 
 -- Creates let statements from complex expressions
 letsFromComplexExp :: Expr -> StateErrorRndEff Context Text ([Stmt], Expr)
@@ -88,7 +89,7 @@ createLetBinding :: Expr -> (Expr -> Expr) -> StateErrorRndEff Context Text ([St
 createLetBinding expr expConstr = do
   varName <- Utils.freshVarName fresh
   (stmts, expr') <- letsFromComplexExp expr
-  pure (stmts ++ [Let varName expr'], expConstr (Var varName))
+  pure (stmts ++ [Let TyToInfer varName expr'], expConstr (Var TyToInfer varName))
 
 -- | Utility function to create two let bindings at one from one
 createDoubleLetBinding :: Expr -> Expr -> (Expr -> Expr -> Expr) -> StateErrorRndEff Context Text ([Stmt], Expr)
@@ -97,7 +98,7 @@ createDoubleLetBinding exprL exprR expConstr = do
   varNameR <- Utils.freshVarName fresh
   (stmtsL, exprL') <- letsFromComplexExp exprL
   (stmtsR, exprR') <- letsFromComplexExp exprR
-  pure (stmtsL ++ [Let varNameL exprL'] ++ stmtsR ++ [Let varNameR exprR'], expConstr (Var varNameL) (Var varNameR))
+  pure (stmtsL ++ [Let TyToInfer varNameL exprL'] ++ stmtsR ++ [Let TyToInfer varNameR exprR'], expConstr (Var TyToInfer varNameL) (Var TyToInfer varNameR))
 
 -- If it's reduced it means that it can't be reduced further
 isReduced :: Expr -> Bool
@@ -107,6 +108,6 @@ isReduced (UnaryOp _ expr) = isAtomic expr
 isReduced _ = False
 
 isAtomic :: Expr -> Bool
-isAtomic (Const _) = True
-isAtomic (Var _) = True
+isAtomic (Const _ _) = True
+isAtomic (Var _ _) = True
 isAtomic _ = False

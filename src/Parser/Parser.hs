@@ -3,11 +3,13 @@ module Parser.Parser where
 import qualified Ast.Ast as Ast
 import Control.Monad
 import Control.Monad.Combinators.Expr (Operator (InfixL), makeExprParser)
-import Data.Text (Text, pack)
+import Data.Text (Text, pack, unpack)
 import Parser.Defs
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
+import Types.Defs (Type (..), NativeType (TyInt))
+import qualified Types.Parsing
 
 runProgramParser :: Text -> Either Text Ast.Program
 runProgramParser input =
@@ -26,17 +28,21 @@ parseProgram = do
 parseStmt :: Parser Ast.Stmt
 parseStmt = choice [parseLet, parsePrint, parseReturn]
 
--- let x = 3 + 3;
+-- let x : int = 3 + 3;
 parseLet :: Parser Ast.Stmt
 parseLet = label "let" . lexeme $
   do
     void (string "let")
     void space1
     var <- parseId
-    void (symbol ":=")
+    void (symbol ":")
+    -- void space1
+    ty <- parseTypeId
+    -- void space1
+    void (symbol "=")
     expr <- parseExpr
     void (symbol ";")
-    return (Ast.Let var expr)
+    return (Ast.Let ty var expr)
 
 -- return x;
 parseReturn :: Parser Ast.Stmt
@@ -79,16 +85,25 @@ binary :: Text -> (Ast.Expr -> Ast.Expr -> Ast.Expr) -> Operator Parser Ast.Expr
 binary name f = InfixL (f <$ symbol name)
 
 parseUint :: Parser Ast.Expr
-parseUint = Ast.Const <$> lexeme (L.decimal <?> "integer")
+parseUint = Ast.Const TyInt <$> lexeme (L.decimal <?> "integer")
 
 parseSignedInt :: Parser Ast.Expr
 parseSignedInt = label "signed int" . lexeme $ do
   void (symbol "-")
-  num <- L.decimal
-  return (Ast.UnaryOp Ast.Neg (Ast.Const num))
+  Ast.UnaryOp Ast.Neg . Ast.Const TyInt <$> L.decimal
 
 parseId :: Parser Text
 parseId = label "identifier" . lexeme $ fmap pack $ (:) <$> letterChar <*> many alphaNumChar
 
+parseTypeId :: Parser Type
+parseTypeId = label "type identifier" . failsIfError . lexeme $ fmap (Types.Parsing.fromTypeId . pack) $ (:) <$> letterChar <*> many alphaNumChar
+  where
+    failsIfError :: Parser (Either Text Type) -> Parser Type
+    failsIfError parserEither = do
+      res <- parserEither
+      case res of
+        (Right ty) -> return ty
+        (Left err) -> fail (unpack err)
+
 parseVar :: Parser Ast.Expr
-parseVar = label "var" . lexeme $ fmap Ast.Var parseId
+parseVar = label "var" . lexeme $ fmap (Ast.Var TyToInfer) parseId

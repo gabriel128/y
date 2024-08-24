@@ -6,6 +6,7 @@ import Data.Map
 import Interpreter.Eval
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase, (@?=))
+import Types.Defs
 
 -- import Test.Tasty.SmallCheck as SC
 
@@ -14,8 +15,8 @@ test_programs = testGroup "Tests" [unitTests]
 
 expr :: Expr
 expr =
-  let negEight = UnaryOp Neg (Const 8)
-      ast1_1 = BinOp Add (Const 42) negEight
+  let negEight = UnaryOp Neg (Const TyInt 8)
+      ast1_1 = BinOp Add (Const TyInt 42) negEight
    in ast1_1
 
 unitTests :: TestTree
@@ -23,7 +24,7 @@ unitTests =
   testGroup
     "ListStack"
     [ testCase "interpretExp Constant" $
-        interpExpr empty (Const 8) @?= Right 8,
+        interpExpr empty (Const TyInt 8) @?= Right 8,
       --
       testCase "interpretExp Expr" $
         interpExpr empty expr @?= Right 34,

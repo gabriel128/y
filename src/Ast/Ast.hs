@@ -1,6 +1,7 @@
 module Ast.Ast where
 
 import qualified Data.Text as T
+import Types.Defs
 
 data Func = Func {funcId :: T.Text, funcArgs :: [Expr]}
   deriving (Eq, Show)
@@ -17,15 +18,17 @@ data BinOp
   | ShiftL
   deriving (Eq, Show)
 
+type Label = T.Text
+
 data Expr
-  = Const Int
+  = Const NativeType Int
   | UnaryOp UnaryOp Expr
   | BinOp BinOp Expr Expr
-  | Var T.Text
+  | Var Type Label
   deriving (Eq, Show)
 
 data Stmt
-  = Let T.Text Expr
+  = Let Type Label Expr
   | Print Expr
   | Return Expr
   deriving (Eq, Show)
