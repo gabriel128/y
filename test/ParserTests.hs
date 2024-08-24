@@ -70,6 +70,6 @@ unitTests =
           @?= Right (Program [Let (Native TyInt) "x" (Const TyInt 3), Let (Native TyInt) "y" (Const TyInt 4), Return (BinOp Add (Var TyToInfer "x") (Var TyToInfer "y"))]),
       --
       testCase "parse invalid program fails" $
-        let res = runProgramParser "let x = 3 \nlet y = 4;"
+        let res = runProgramParser "let x: int = 3 \nlet y: int = 4;"
          in assertBool "" (isLeft res)
     ]

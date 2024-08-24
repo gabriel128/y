@@ -28,7 +28,6 @@ library
   exposed-modules:
       Ast.Ast
       Ast.Examples
-      Ast.TypedAst
       Context
       EffUtils
       Experiments
@@ -45,7 +44,6 @@ library
       Passes.Atomizer
       Passes.Error
       Passes.StmtsToX86
-      Passes.TypedToUntyped
       Passes.X86ToTextProg
       Types.Defs
       Types.Parsing
