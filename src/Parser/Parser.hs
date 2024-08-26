@@ -12,7 +12,6 @@ import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 import Types.Defs (Type (..), NativeType (I64))
 import qualified Types.Parsing
-import Data.Maybe (fromMaybe)
 
 runProgramParser :: Text -> Either Text Ast.Program
 runProgramParser input =
@@ -39,9 +38,7 @@ parseLet = label "let" . lexeme $
     void space1
     var <- parseId
     void (symbol ":")
-    -- void space1
     ty <- parseTypeId
-    -- void space1
     void (symbol "=")
     expr <- parseExpr
     void (symbol ";")
