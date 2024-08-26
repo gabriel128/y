@@ -22,8 +22,8 @@ test_id_ir = testGroup "Tests" [unitTests]
 
 expr :: Expr
 expr =
-  let negEight = UnaryOp Neg (Const TyInt 8)
-      ast1_1 = BinOp Add (Const TyInt 42) negEight
+  let negEight = UnaryOp Neg (Const I64 8)
+      ast1_1 = BinOp Add (Const I64 42) negEight
    in ast1_1
 
 runComplexStmts :: [Stmt] -> (Context, Program)
@@ -37,8 +37,8 @@ unitTests =
   testGroup
     "ListStack"
     [ testCase "remove complex ops do nothing when not needed" $
-        let (Context locals 0, prog) = runComplexStmts [Let (Native TyInt) "x" (Const TyInt 8)]
-            expected = Program [Let (Native TyInt) "x" (Const TyInt 8)]
+        let (Context locals 0, prog) = runComplexStmts [Let (Native I64) "x" (Const I64 8)]
+            expected = Program [Let (Native I64) "x" (Const I64 8)]
          in do
               assertEqual "" locals (Set.fromList ["x"])
               assertEqual "" prog expected

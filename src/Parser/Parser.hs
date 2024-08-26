@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Parser.Parser where
 
 import qualified Ast.Ast as Ast
@@ -8,8 +10,9 @@ import Parser.Defs
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
-import Types.Defs (Type (..), NativeType (TyInt))
+import Types.Defs (Type (..), NativeType (I64))
 import qualified Types.Parsing
+import Data.Maybe (fromMaybe)
 
 runProgramParser :: Text -> Either Text Ast.Program
 runProgramParser input =
@@ -20,13 +23,13 @@ runProgramParser input =
 -- Stmts
 parseProgram :: Parser Ast.Program
 parseProgram = do
-  void space
+  void spaceConsumer
   stmts <- many parseStmt
   void eof
   return (Ast.Program stmts)
 
 parseStmt :: Parser Ast.Stmt
-parseStmt = choice [parseLet, parsePrint, parseReturn]
+parseStmt = lexeme $ choice [parseLet, parsePrint, parseReturn]
 
 -- let x : int = 3 + 3;
 parseLet :: Parser Ast.Stmt
@@ -85,12 +88,12 @@ binary :: Text -> (Ast.Expr -> Ast.Expr -> Ast.Expr) -> Operator Parser Ast.Expr
 binary name f = InfixL (f <$ symbol name)
 
 parseUint :: Parser Ast.Expr
-parseUint = Ast.Const TyInt <$> lexeme (L.decimal <?> "integer")
+parseUint = Ast.Const I64 <$> lexeme (L.decimal <?> "integer")
 
 parseSignedInt :: Parser Ast.Expr
 parseSignedInt = label "signed int" . lexeme $ do
   void (symbol "-")
-  Ast.UnaryOp Ast.Neg . Ast.Const TyInt <$> L.decimal
+  Ast.UnaryOp Ast.Neg . Ast.Const I64 <$> L.decimal
 
 parseId :: Parser Text
 parseId = label "identifier" . lexeme $ fmap pack $ (:) <$> letterChar <*> many alphaNumChar
