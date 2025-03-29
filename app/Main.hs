@@ -5,8 +5,6 @@
 
 module Main where
 
--- import System.Console.CmdArgs
-
 import Control.Arrow (left)
 import Data.Text (pack, unpack)
 import Lib

@@ -19,7 +19,7 @@ enqueue x (Queue llen xls rlen xrs) = Queue llen xls (rlen + 1) (x : xrs)
 dequeue :: Queue a -> (Maybe a, Queue a)
 dequeue queue@(Queue _ [] _ []) = (Nothing, queue)
 dequeue (Queue _ [] rlen xrs) = dequeue $ Queue rlen (reverse xrs) 0 []
-dequeue (Queue llen (x : xls) rlen xrs) = (Just x, Queue (llen -1) xls rlen xrs)
+dequeue (Queue llen (x : xls) rlen xrs) = (Just x, Queue (llen - 1) xls rlen xrs)
 
 instance Functor Queue where
   fmap f (Queue llen xls rlen xrs) = Queue llen (fmap f xls) rlen (fmap f xrs)

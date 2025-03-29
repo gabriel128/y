@@ -10,7 +10,7 @@ import Parser.Defs
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
-import Types.Defs (Type (..), NativeType (I64))
+import Types.Defs (NativeType (I64), Type (..))
 import qualified Types.Parsing
 
 runProgramParser :: Text -> Either Text Ast.Program

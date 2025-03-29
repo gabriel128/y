@@ -38,4 +38,3 @@ newtype Program = Program {progStmts :: [Stmt]} deriving (Show, Eq)
 
 newProgram :: [Stmt] -> Program
 newProgram = Program
-

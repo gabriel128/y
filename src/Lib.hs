@@ -1,11 +1,11 @@
 module Lib where
 
 import Ast.Ast (Program)
+import Context (Context, defaultContext)
 import Data.Text (Text)
+import EffUtils (StateErrorEff, runStateErrorEff)
 import Parser.Parser (runProgramParser)
 import qualified Passes.Atomizer as Atomizer
-import EffUtils (runStateErrorEff, StateErrorEff)
-import Context (Context, defaultContext)
 import qualified Passes.StmtsToX86 as StmtsToX86
 import qualified Passes.X86ToTextProg
 

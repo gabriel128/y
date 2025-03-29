@@ -12,15 +12,15 @@
 module Passes.Atomizer where
 
 import Ast.Ast
+import Context (Context, addLocal)
 import Control.Carrier.Error.Either
 import Control.Carrier.Fresh.Strict
 import Control.Carrier.State.Strict
 import Data.Foldable
 import Data.Text (Text)
+import EffUtils (StateErrorEff, StateErrorEffM, StateErrorRndEff, StateErrorRndEffM)
+import Types.Defs (Type (TyToInfer))
 import Utils
-import Context (Context, addLocal)
-import EffUtils (StateErrorRndEff, StateErrorEff, StateErrorEffM, StateErrorRndEffM)
-import Types.Defs (Type(TyToInfer))
 
 -- Extracts the Context and Program from the effects
 runRemComplexStmts :: Context -> Program -> Either Text (Context, Program)
@@ -50,7 +50,6 @@ addBindsToContext = mapM_ mapper
     mapper (Let _ binding _) = modify @Context (Context.addLocal binding)
     mapper _ = pure ()
 
-
 --  Transform a complex statment (i.e. statements that are not atomic) into sequential let bindings
 removeComplexStmt :: Stmt -> StateErrorRndEff Context Text [Stmt]
 removeComplexStmt stmt =
@@ -58,7 +57,6 @@ removeComplexStmt stmt =
     stmt'@(Return expr) | isAtomic expr -> pure [stmt']
     stmt'@(Print expr) | isAtomic expr -> pure [stmt']
     stmt'@(Let _ _ expr) | isAtomic expr -> pure [stmt']
-
     Return expr -> do
       (letStmts, lastExpr) <- letsFromComplexExp expr
       varName <- Utils.freshVarName fresh
@@ -84,7 +82,6 @@ letsFromComplexExp expr' =
 
 -- | Creates a single let statement, it will have the shape of tmp_x
 --   where x is an incremental number
-
 createLetBinding :: Expr -> (Expr -> Expr) -> StateErrorRndEff Context Text ([Stmt], Expr)
 createLetBinding expr expConstr = do
   varName <- Utils.freshVarName fresh
