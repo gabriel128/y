@@ -1,17 +1,19 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Monoid law, right identity" #-}
+{-# HLINT ignore "Functor law" #-}
+{-# HLINT ignore "Monoid law, left identity" #-}
 
 module DsTests (test_general_ds, dsProps) where
 
-import Control.Monad (join)
-import Data.Proxy (Proxy (..))
 import qualified Data.Set as Set
-import Debug.Trace (traceShowId)
 import GeneralDS.Graph
 import GeneralDS.Queue (Queue (..))
 import qualified GeneralDS.Queue as Queue
 import GeneralDS.Stack (Stack (..))
 import qualified GeneralDS.Stack as Stack
-import Test.QuickCheck.Classes
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
 import Test.Tasty.QuickCheck
@@ -46,13 +48,13 @@ unitTests =
                 Node "d" (Set.fromList ["b"])
               ]
         let graph = foldr insertNode newGraph nodes
-        let nodes' =
-              [ Node "a" (Set.fromList ["f"]),
+        let _nodes' =
+              [ Node ("a" :: String) (Set.fromList ["f"]),
                 Node "f" (Set.fromList ["b"])
               ]
         let graph' = foldr insertNode newGraph nodes
-        let expectedNodes =
-              [ Node "a" (Set.fromList ["b", "c", "f"]),
+        let _expectedNodes =
+              [ Node ("a" :: String) (Set.fromList ["b", "c", "f"]),
                 Node "b" (Set.fromList ["a", "d", "f"]),
                 Node "c" (Set.fromList ["a"]),
                 Node "d" (Set.fromList ["b"]),
@@ -71,7 +73,7 @@ unitTests =
                   Node "f" (Set.fromList ["e"])
                 ]
           let graph = foldr insertNode newGraph nodes
-          assertEqual "" (dfs "a" graph) (Right ["a", "b", "d", "c"])
+          assertEqual "" (dfs ("a" :: String) graph) (Right ["a", "b", "d", "c"])
           assertEqual "" (dfs "b" graph) (Right ["b", "a", "c", "d"])
           assertEqual "" (dfs "c" graph) (Right ["c", "a", "b", "d"])
           assertEqual "" (dfs "d" graph) (Right ["d", "b", "a", "c"])
@@ -89,7 +91,7 @@ unitTests =
                   Node "f" (Set.fromList ["e"])
                 ]
           let graph = foldr insertNode newGraph nodes
-          assertEqual "" (bfs "a" graph) (Right [(0, "a"), (1, "b"), (1, "c"), (2, "d")])
+          assertEqual "" (bfs ("a" :: String) graph) (Right [(0, "a"), (1, "b"), (1, "c"), (2, "d")])
           assertEqual "" (bfs "b" graph) (Right [(0, "b"), (1, "a"), (1, "d"), (2, "c")])
           assertEqual "" (bfs "c" graph) (Right [(0, "c"), (1, "a"), (2, "b"), (3, "d")])
           assertEqual "" (bfs "d" graph) (Right [(0, "d"), (1, "b"), (2, "a"), (3, "c")])
@@ -116,7 +118,7 @@ unitTests =
         assertEqual "" (Queue.toList queue) ([] :: [Int])
         let queue1 = Queue.enqueue 1 queue
         assertEqual "" (Queue.toList queue1) [1]
-        let queue2 = Queue.enqueue 2 queue1
+        let queue2 = Queue.enqueue (2 :: Integer) queue1
         assertEqual "" (Queue.toList queue2) [1, 2]
         let (res, queue3) = Queue.dequeue queue2
         assertEqual "" (Queue.toList queue3) [2]
@@ -162,7 +164,7 @@ functorIdLaw :: (Functor k, Eq (k a)) => k a -> Bool
 functorIdLaw k = fmap id k == k
 
 functorFusionLaw :: (Functor k, Eq (k c)) => k a -> Fun b c -> Fun a b -> Bool
-functorFusionLaw k (Fun _ f) (Fun _ g) = (fmap (f . g) k) == (fmap f . fmap g $ k)
+functorFusionLaw k (Fun _ f) (Fun _ g) = fmap (f . g) k == (fmap f . fmap g $ k)
 
 queueLaws :: [TestTree]
 queueLaws =
