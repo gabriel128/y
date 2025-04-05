@@ -28,9 +28,9 @@ parseProgram = do
   return (Ast.Program stmts)
 
 parseStmt :: Parser Ast.Stmt
-parseStmt = lexeme $ choice [parsePrint, parseReturn, parseLet]
+parseStmt = lexeme $ choice [parsePrint, parseReturn, try parseLet <|> parseLetToInfer]
 
--- let x : int = 3 + 3;
+-- x : int = 3 + 3;
 parseLet :: Parser Ast.Stmt
 parseLet = label "let" . lexeme $
   do
@@ -43,6 +43,18 @@ parseLet = label "let" . lexeme $
     expr <- parseExpr
     void (symbol ";")
     return (Ast.Let ty var expr)
+
+-- x  = 3 + 3;
+parseLetToInfer :: Parser Ast.Stmt
+parseLetToInfer = label "let" . lexeme $
+  do
+    -- void (string "let")
+    void space
+    var <- parseId
+    void (symbol "=")
+    expr <- parseExpr
+    void (symbol ";")
+    return (Ast.Let TyToInfer var expr)
 
 -- return x;
 parseReturn :: Parser Ast.Stmt

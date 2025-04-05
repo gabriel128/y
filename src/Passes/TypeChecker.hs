@@ -1,5 +1,15 @@
 module Passes.TypeChecker where
 
+-- \|
+--
+-- Type Checker
+--
+-- This type checker can be placed before or after the Atomizer.
+-- Doing type checking after the atomizer ensures that typechecking statements
+-- is O(n). However having it after will require workarounds for type errors since
+-- the atomizer will create temp variables so for now assume that this is going
+-- to be the first thing that runs.
+
 import Ast.Ast (Expr (BinOp, Const, UnaryOp, Var), Program (progStmts), Stmt (Let, Print, Return), UnaryOp (Neg))
 import Context (Context)
 import Control.Carrier.Error.Church (liftEither)
@@ -34,6 +44,10 @@ typeCheckStmt stmt typeMap =
     Print expr -> do
       _ <- getExprType expr typeMap
       Right typeMap
+    Let TyToInfer label expr -> do
+      exprType <- getExprType expr typeMap
+      let newMap = M.insert label exprType typeMap
+      Right newMap
     Let letType label expr -> do
       exprType <- getExprType expr typeMap
       if letType == exprType

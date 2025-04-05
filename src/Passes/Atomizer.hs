@@ -67,7 +67,7 @@ removeComplexStmt stmt =
       pure (letStmts ++ [Let TyToInfer varName lastExpr, Print (Var TyToInfer varName)])
     Let ty binding expr -> do
       (stmts, lastExpr) <- letsFromComplexExp expr
-      pure (stmts ++ [Let TyToInfer binding lastExpr])
+      pure (stmts ++ [Let ty binding lastExpr])
 
 -- Creates let statements from complex expressions
 letsFromComplexExp :: Expr -> StateErrorRndEff Context Text ([Stmt], Expr)
