@@ -44,7 +44,7 @@ library
       Passes.Atomizer
       Passes.Error
       Passes.StmtsToX86
-      Passes.TypeCheck
+      Passes.TypeChecker
       Passes.X86ToTextProg
       Types.Defs
       Types.Parsing
