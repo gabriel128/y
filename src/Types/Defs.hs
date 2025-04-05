@@ -1,7 +1,7 @@
 module Types.Defs where
 
-data NativeType = I64 | TyBool
+data NativeType = I64 | U64 | TyBool
   deriving (Eq, Show)
 
-data Type = Native NativeType | TyToInfer | Custom | Void
+data Type = Native NativeType | TyToInfer | Unit
   deriving (Eq, Show)

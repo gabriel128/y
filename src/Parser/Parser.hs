@@ -28,14 +28,14 @@ parseProgram = do
   return (Ast.Program stmts)
 
 parseStmt :: Parser Ast.Stmt
-parseStmt = lexeme $ choice [parseLet, parsePrint, parseReturn]
+parseStmt = lexeme $ choice [parsePrint, parseReturn, parseLet]
 
 -- let x : int = 3 + 3;
 parseLet :: Parser Ast.Stmt
 parseLet = label "let" . lexeme $
   do
-    void (string "let")
-    void space1
+    -- void (string "let")
+    void space
     var <- parseId
     void (symbol ":")
     ty <- parseTypeId
