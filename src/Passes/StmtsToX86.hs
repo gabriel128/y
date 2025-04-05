@@ -193,5 +193,6 @@ fromStmtToInstrs stmt =
           Mov x Rax
         ]
 
+    -- TODO add negation
     -- -- Unhandled
     stmt' -> throwError (pack $ "Unhandled stmt: " <> show stmt')

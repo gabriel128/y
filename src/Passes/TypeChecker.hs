@@ -40,7 +40,7 @@ typeCheckStmt stmt typeMap =
         then do
           let newMap = M.insert label letType typeMap
           Right newMap
-        else Left $ T.pack ("type check failed for var definition on line x: " <> show letType <> "doesn't match with " <> show exprType)
+        else Left $ T.pack ("type check failed for var definition on line x: " <> show letType <> " doesn't match with " <> show exprType)
 
 -- TODO add linenumbers
 getExprType :: Expr -> VarToTypeMappings -> Either Text Type
