@@ -10,7 +10,7 @@ module Passes.TypeChecker where
 -- the atomizer will create temp variables so for now assume that this is going
 -- to be the first thing that runs.
 
-import Ast.Ast (Expr (BinOp, Const, UnaryOp, Var), Program (progStmts), Stmt (Let, Print, Return), UnaryOp (Neg))
+import Ast.Ast (BinOp (..), Expr (BinOp, Const, UnaryOp, Var), Program (progStmts), Stmt (Let, Print, Return), UnaryOp (Neg))
 import Context (Context)
 import Control.Carrier.Error.Church (liftEither)
 import Data.Either.Combinators (maybeToRight)
@@ -19,7 +19,7 @@ import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import EffUtils (StateErrorEffM)
-import Types.Defs (NativeType (I64), Type (Native, TyToInfer))
+import Types.Defs (NativeType (..), Type (Native, TyToInfer))
 
 type VarToTypeMappings = M.Map Text Type
 
@@ -73,5 +73,12 @@ getExprType expr typeMap =
       leftType <- getExprType leftExpr typeMap
       rightType <- getExprType rightExpr typeMap
       if leftType == rightType
-        then Right leftType
+        then do
+          _ <- typeCheckBinOp op leftType
+          Right leftType
         else Left $ T.pack ("type check failed for " <> show op <> "on line x: lhs " <> show leftType <> "doesn't match with rhs " <> show rightType)
+
+typeCheckBinOp :: BinOp -> Type -> Either Text ()
+typeCheckBinOp binop (Native nativeTy)
+  | binop `elem` [Add, Sub, Mul, Div, ShiftL] && nativeTy `elem` [I64, U64] = Right ()
+typeCheckBinOp binop ty = Left $ T.pack $ "type " <> show ty <> " can't be handled by " <> show binop

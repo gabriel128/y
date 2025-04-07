@@ -9,7 +9,6 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, testCase, (@?=))
 import Text.Megaparsec
 import Types.Defs
-import Types.Defs (Type (TyToInfer))
 
 -- import Test.Tasty.SmallCheck as SC
 
@@ -33,16 +32,22 @@ unitTests =
         parse parseExpr "" "-123" @?= Right (UnaryOp Neg (Const I64 123)),
       --
       testCase "parses let stmts with const" $
-        parse parseLet "" "x: i64 = 3;" @?= Right (Let (Native I64) "x" (Const I64 3)),
+        parse parseLet "" " const x: i64 = 3;" @?= Right (Let (Native I64) "x" (Const I64 3)),
+      --
+      testCase "parses let stmts with mut" $
+        parse parseLet "" "mut x: i64 = 3;" @?= Right (MutLet (Native I64) "x" (Const I64 3)),
       --
       testCase "parses let stmts with var" $
-        parse parseLet "" "x:i64 = y;" @?= Right (Let (Native I64) "x" (Var TyToInfer "y")),
+        parse parseLet "" "const x:i64 = y;" @?= Right (Let (Native I64) "x" (Var TyToInfer "y")),
+      --
+      testCase "errors when parsing let stmts with incorrect let modifier" $
+        assertBool "" (isLeft $ parse parseLet "" "cut x: i64 = 3;"),
       --
       testCase "parses return stmt" $
         parse parseReturn "" "return y;" @?= Right (Return (Var TyToInfer "y")),
       --
       testCase "parses let stmt with sum" $
-        parse parseLet "" "x: i64 = 1 + y;" @?= Right (Let (Native I64) "x" (BinOp Add (Const I64 1) (Var TyToInfer "y"))),
+        parse parseLet "" "const x: i64 = 1 + y;" @?= Right (Let (Native I64) "x" (BinOp Add (Const I64 1) (Var TyToInfer "y"))),
       --
       testCase "parses sum stmts" $
         parse (parseExpr <* eof) "" "(1 + 3) - 2" @?= Right (BinOp Sub (BinOp Add (Const I64 1) (Const I64 3)) (Const I64 2)),
@@ -57,7 +62,7 @@ unitTests =
         parse (parseExpr <* eof) "" "1 << 2" @?= Right (BinOp ShiftL (Const I64 1) (Const I64 2)),
       --
       testCase "parses let stmts 1" $
-        parse parseLet "" "y:   i64 = -30;" @?= Right (Let (Native I64) "y" (UnaryOp Neg (Const I64 30))),
+        parse parseLet "" "const  y:   i64 = -30;" @?= Right (Let (Native I64) "y" (UnaryOp Neg (Const I64 30))),
       --
       testCase "parse integers ignores comments afterwards" $
         parse (parseExpr <* eof) "" "123 // hey you!" @?= Right (Const I64 123),
@@ -66,15 +71,15 @@ unitTests =
         assertBool "" (isLeft $ parse parseUint "" "a123"),
       --
       testCase "parse program" $
-        runProgramParser "     x : i64 = 3; y : i64 = 4; return (x + y);"
+        runProgramParser "     const  x : i64 = 3; const y : i64 = 4; return (x + y);"
           @?= Right (Program [Let (Native I64) "x" (Const I64 3), Let (Native I64) "y" (Const I64 4), Return (BinOp Add (Var TyToInfer "x") (Var TyToInfer "y"))]),
       --
       testCase "parse program with commented lines" $
-        runProgramParser "x : i64 = 3; // let y : i64 = 4; \n return (x + y);"
+        runProgramParser "const x : i64 = 3; // let y : i64 = 4; \n return (x + y);"
           @?= Right (Program [Let (Native I64) "x" (Const I64 3), Return (BinOp Add (Var TyToInfer "x") (Var TyToInfer "y"))]),
       --
       testCase "parse whole commented program" $
-        runProgramParser "// x: i64 = 4;"
+        runProgramParser "// const x: i64 = 4;"
           @?= Right (Program []),
       --
       testCase "parse invalid program fails" $

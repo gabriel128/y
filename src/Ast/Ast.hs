@@ -27,8 +27,12 @@ data Expr
   | Var Type Label
   deriving (Eq, Show)
 
+data LetModifier = Imm | Mut
+  deriving (Eq, Show)
+
 data Stmt
   = Let Type Label Expr
+  | MutLet Type Label Expr
   | Print Expr
   | Return Expr
   deriving (Eq, Show)

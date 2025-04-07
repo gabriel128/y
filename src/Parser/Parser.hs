@@ -34,27 +34,32 @@ parseStmt = lexeme $ choice [parsePrint, parseReturn, try parseLet <|> parseLetT
 parseLet :: Parser Ast.Stmt
 parseLet = label "let" . lexeme $
   do
-    -- void (string "let")
     void space
+    letModifier <- parseLetModifier
+    void space1
     var <- parseId
     void (symbol ":")
     ty <- parseTypeId
     void (symbol "=")
     expr <- parseExpr
     void (symbol ";")
-    return (Ast.Let ty var expr)
+    return (if letModifier == "const" then Ast.Let ty var expr else Ast.MutLet ty var expr)
 
 -- x  = 3 + 3;
 parseLetToInfer :: Parser Ast.Stmt
 parseLetToInfer = label "let" . lexeme $
   do
-    -- void (string "let")
     void space
+    letModifier <- parseLetModifier
+    void space1
     var <- parseId
     void (symbol "=")
     expr <- parseExpr
     void (symbol ";")
-    return (Ast.Let TyToInfer var expr)
+    return (if letModifier == "const" then Ast.Let TyToInfer var expr else Ast.MutLet TyToInfer var expr)
+
+parseLetModifier :: Parser Text
+parseLetModifier = choice [string "const", string "mut"]
 
 -- return x;
 parseReturn :: Parser Ast.Stmt
