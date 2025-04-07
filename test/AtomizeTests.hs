@@ -37,8 +37,8 @@ unitTests =
   testGroup
     "ListStack"
     [ testCase "remove complex ops do nothing when not needed" $
-        let (Context locals 0, prog) = runComplexStmts [Let (Native I64) "x" (Const I64 8)]
-            expected = Program [Let (Native I64) "x" (Const I64 8)]
+        let (Context locals 0, prog) = runComplexStmts [Let (Native ImmTy I64) "x" (Const I64 8)]
+            expected = Program [Let (Native ImmTy I64) "x" (Const I64 8)]
          in do
               assertEqual "" locals (Set.fromList ["x"])
               assertEqual "" prog expected

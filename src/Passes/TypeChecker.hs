@@ -19,7 +19,7 @@ import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import EffUtils (StateErrorEffM)
-import Types.Defs (NativeType (..), Type (Native, TyToInfer))
+import Types.Defs (NativeType (..), Type (Native, TyToInfer), TypeInfo (..), sameTypeIgnoreMut)
 
 type VarToTypeMappings = M.Map Text Type
 
@@ -50,7 +50,7 @@ typeCheckStmt stmt typeMap =
       Right newMap
     Let letType label expr -> do
       exprType <- getExprType expr typeMap
-      if letType == exprType
+      if sameTypeIgnoreMut letType exprType
         then do
           let newMap = M.insert label letType typeMap
           Right newMap
@@ -60,15 +60,15 @@ typeCheckStmt stmt typeMap =
 getExprType :: Expr -> VarToTypeMappings -> Either Text Type
 getExprType expr typeMap =
   case expr of
-    Const nativeType _val -> Right . Native $ nativeType
+    Const nativeType _val -> Right . Native ImmTy $ nativeType
     Var TyToInfer label -> do
       maybeToRight (T.pack ("Can't infer type for" <> show label)) $ M.lookup label typeMap
     Var ty _ -> Right ty
     UnaryOp Neg expr' -> do
       theType <- getExprType expr' typeMap
-      if theType `elem` [Native I64, Native I64]
-        then Right theType
-        else Left $ T.pack ("Negation only take numeric types, found: " <> show theType)
+      case theType of
+        Native _ a | a `elem` [I64, U64] -> Right theType
+        _otherwise -> Left $ T.pack ("Negation only take numeric types, found: " <> show theType)
     BinOp op leftExpr rightExpr -> do
       leftType <- getExprType leftExpr typeMap
       rightType <- getExprType rightExpr typeMap
@@ -79,6 +79,6 @@ getExprType expr typeMap =
         else Left $ T.pack ("type check failed for " <> show op <> "on line x: lhs " <> show leftType <> "doesn't match with rhs " <> show rightType)
 
 typeCheckBinOp :: BinOp -> Type -> Either Text ()
-typeCheckBinOp binop (Native nativeTy)
+typeCheckBinOp binop (Native _ nativeTy)
   | binop `elem` [Add, Sub, Mul, Div, ShiftL] && nativeTy `elem` [I64, U64] = Right ()
 typeCheckBinOp binop ty = Left $ T.pack $ "type " <> show ty <> " can't be handled by " <> show binop

@@ -13,20 +13,20 @@ test_reg_alloc = testGroup "Tests" [unitTests]
 
 ex1 :: [Stmt]
 ex1 =
-  [ Let (Native I64) "a" (Const I64 5),
-    Let (Native I64) "b" (Const I64 30),
-    Let (Native I64) "c" (Var (Native I64) "a"),
-    Let (Native I64) "b" (Const I64 10),
-    Let (Native I64) "b" (BinOp Add (Var (Native I64) "b") (Var (Native I64) "c"))
+  [ Let (Native ImmTy I64) "a" (Const I64 5),
+    Let (Native ImmTy I64) "b" (Const I64 30),
+    Let (Native ImmTy I64) "c" (Var (Native ImmTy I64) "a"),
+    Let (Native ImmTy I64) "b" (Const I64 10),
+    Let (Native ImmTy I64) "b" (BinOp Add (Var (Native ImmTy I64) "b") (Var (Native ImmTy I64) "c"))
   ]
 
 enrichedEx1 :: [EnrichedStmt]
 enrichedEx1 =
-  [ EnrichedStmt (StmtMetadata (fromList ["a"])) (Let (Native I64) "a" (Const I64 5)),
-    EnrichedStmt (StmtMetadata (fromList ["a"])) (Let (Native I64) "b" (Const I64 30)),
-    EnrichedStmt (StmtMetadata (fromList ["c"])) (Let (Native I64) "c" (Var (Native I64) "a")),
-    EnrichedStmt (StmtMetadata (fromList ["b", "c"])) (Let (Native I64) "b" (Const I64 10)),
-    EnrichedStmt (StmtMetadata (fromList [])) (Let (Native I64) "b" (BinOp Add (Var (Native I64) "b") (Var (Native I64) "c")))
+  [ EnrichedStmt (StmtMetadata (fromList ["a"])) (Let (Native ImmTy I64) "a" (Const I64 5)),
+    EnrichedStmt (StmtMetadata (fromList ["a"])) (Let (Native ImmTy I64) "b" (Const I64 30)),
+    EnrichedStmt (StmtMetadata (fromList ["c"])) (Let (Native ImmTy I64) "c" (Var (Native ImmTy I64) "a")),
+    EnrichedStmt (StmtMetadata (fromList ["b", "c"])) (Let (Native ImmTy I64) "b" (Const I64 10)),
+    EnrichedStmt (StmtMetadata (fromList [])) (Let (Native ImmTy I64) "b" (BinOp Add (Var (Native ImmTy I64) "b") (Var (Native ImmTy I64) "c")))
   ]
 
 unitTests :: TestTree

@@ -10,7 +10,7 @@ import Parser.Defs
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
-import Types.Defs (NativeType (I64), Type (..))
+import Types.Defs (NativeType (I64), Type (..), TypeInfo (..))
 import qualified Types.Parsing
 
 runProgramParser :: Text -> Either Text Ast.Program
@@ -35,31 +35,32 @@ parseLet :: Parser Ast.Stmt
 parseLet = label "let" . lexeme $
   do
     void space
-    letModifier <- parseLetModifier
-    void space1
     var <- parseId
     void (symbol ":")
-    ty <- parseTypeId
+    typeInfo <- parseTypeInfo
+    ty <- parseTypeId typeInfo
     void (symbol "=")
     expr <- parseExpr
     void (symbol ";")
-    return (if letModifier == "const" then Ast.Let ty var expr else Ast.MutLet ty var expr)
+    return $ Ast.Let ty var expr
 
--- x  = 3 + 3;
-parseLetToInfer :: Parser Ast.Stmt
-parseLetToInfer = label "let" . lexeme $
+parseTypeInfo :: Parser TypeInfo
+parseTypeInfo = label "let" . lexeme $
   do
     void space
-    letModifier <- parseLetModifier
-    void space1
+    typeInfo <- option "" (symbol "mut")
+    return (if typeInfo == "mut" then MutTy else ImmTy)
+
+-- x = 3 + 3;
+parseLetToInfer :: Parser Ast.Stmt
+parseLetToInfer = label "let inferred" . lexeme $
+  do
+    void space
     var <- parseId
     void (symbol "=")
     expr <- parseExpr
     void (symbol ";")
-    return (if letModifier == "const" then Ast.Let TyToInfer var expr else Ast.MutLet TyToInfer var expr)
-
-parseLetModifier :: Parser Text
-parseLetModifier = choice [string "const", string "mut"]
+    return $ Ast.Let TyToInfer var expr
 
 -- return x;
 parseReturn :: Parser Ast.Stmt
@@ -112,8 +113,8 @@ parseSignedInt = label "signed int" . lexeme $ do
 parseId :: Parser Text
 parseId = label "identifier" . lexeme $ fmap pack $ (:) <$> letterChar <*> many alphaNumChar
 
-parseTypeId :: Parser Type
-parseTypeId = label "type identifier" . failsIfError . lexeme $ fmap (Types.Parsing.fromTypeId . pack) $ (:) <$> letterChar <*> many alphaNumChar
+parseTypeId :: TypeInfo -> Parser Type
+parseTypeId typeInfo = label "type identifier" . failsIfError . lexeme $ fmap (Types.Parsing.fromTypeId typeInfo . pack) $ (:) <$> letterChar <*> many alphaNumChar
   where
     failsIfError :: Parser (Either Text Type) -> Parser Type
     failsIfError parserEither = do
@@ -124,3 +125,8 @@ parseTypeId = label "type identifier" . failsIfError . lexeme $ fmap (Types.Pars
 
 parseVar :: Parser Ast.Expr
 parseVar = label "var" . lexeme $ fmap (Ast.Var TyToInfer) parseId
+
+-- Experiments
+
+-- parseLetModifier :: Parser Text
+-- parseLetModifier = choice [string "const", string "mut"]

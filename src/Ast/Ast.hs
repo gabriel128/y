@@ -32,7 +32,6 @@ data LetModifier = Imm | Mut
 
 data Stmt
   = Let Type Label Expr
-  | MutLet Type Label Expr
   | Print Expr
   | Return Expr
   deriving (Eq, Show)

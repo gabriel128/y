@@ -1,4 +1,4 @@
-# _Y_ 
+# _Y_ lang
 
 They _Y_ programming language. 
 
@@ -20,6 +20,7 @@ It is from Ast to Ast
 representation. It goes from Ast to Nasm
 3. X86ToTextProg - Picks the NASM IR and transforms it to a final text, used to generate an .asm 
 later on
+4. TypeChecker - WIP
 
 # How to compile a .y file
 
@@ -52,8 +53,9 @@ make docker-x86_64
 
 # Tests
 
-They are meant to run in the docker container. 
+They are meant to run in the docker container or a linux machine
 
 ```
 make test
 ```
+

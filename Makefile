@@ -14,7 +14,7 @@ test:
 	stack test --file-watch --fast 
 
 test-specific:
-	stack test --file-watch --fast --ta "-p /liveness for ex1/
+	stack test --file-watch --fast --ta '-p "liveness for ex1"'
 
 compile-watch:
 	stack build --file-watch --fast
