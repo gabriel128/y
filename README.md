@@ -59,3 +59,24 @@ They are meant to run in the docker container or a linux machine
 make test
 ```
 
+
+# Language TLDR
+
+## Mutability 
+
+By default variables are immutable. The mutability of a variable is defined in the type 
+so operations that mutate variables are type checked
+
+e.g. 
+
+```
+// Immutable type
+x : i64 = 3;
+
+// Mutable type
+i : mut i64 = 0;
+
+// Automatic Mutability cast
+x : mut i64 = x;
+```
+
