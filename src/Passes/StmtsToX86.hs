@@ -70,7 +70,7 @@ fromStmtToInstrs :: Stmt -> StateErrorEff LocalStackMap Text [Instr]
 fromStmtToInstrs stmt =
   case stmt of
     -- let x = 3;
-    (Let _ binding (Const _ num)) -> do
+    (Let _ binding (Const _ (NativeInt num))) -> do
       x <- getStackMapping binding
       pure [Mov x num]
 
@@ -84,7 +84,7 @@ fromStmtToInstrs stmt =
         ]
 
     -- return 4;
-    (Return (Const _ num)) ->
+    (Return (Const _ (NativeInt num))) ->
       pure
         [ Mov Rax num,
           Ret
@@ -98,7 +98,7 @@ fromStmtToInstrs stmt =
         ]
 
     -- print 3
-    (Print (Const _ num)) ->
+    (Print (Const _ (NativeInt num))) ->
       pure
         [ Mov Rdi printFormatLabel,
           Mov Rsi num,
@@ -117,7 +117,7 @@ fromStmtToInstrs stmt =
 
     -- Handle addition
     -- x = 2 + 2; -> mov x, 2; add x, 2
-    (Let _ binding (BinOp Ast.Add (Const _ num1) (Const _ num2))) -> do
+    (Let _ binding (BinOp Ast.Add (Const _ (NativeInt num1)) (Const _ (NativeInt num2)))) -> do
       x <- getStackMapping binding
       pure
         [ Mov x num1,
@@ -126,7 +126,7 @@ fromStmtToInstrs stmt =
 
     -- x = 2 + y; -> mov rax, y; add rax, 2; mov x rax
     -- x = 2 + x; -> add x, 2
-    (Let _ binding (BinOp Ast.Add (Const _ num) (Var _ binding2))) -> do
+    (Let _ binding (BinOp Ast.Add (Const _ (NativeInt num)) (Var _ binding2))) -> do
       x <- getStackMapping binding
       y <- getStackMapping binding2
       let z = (2 :: Int)
@@ -140,8 +140,8 @@ fromStmtToInstrs stmt =
             ]
 
     -- Add is commutative so we just call the above definition
-    (Let ty binding (BinOp Ast.Add (Var _ binding2) (Const nty num))) ->
-      fromStmtToInstrs (Let ty binding (BinOp Ast.Add (Const nty num) (Var ty binding2)))
+    (Let ty binding (BinOp Ast.Add (Var _ binding2) (Const nty (NativeInt num)))) ->
+      fromStmtToInstrs (Let ty binding (BinOp Ast.Add (Const nty (NativeInt num)) (Var ty binding2)))
     -- x = z + y; -> mov rax, z; add rax, y; mov x, rax
     (Let _ binding (BinOp Ast.Add (Var _ binding1) (Var _ binding2))) -> do
       x <- getStackMapping binding
@@ -155,7 +155,7 @@ fromStmtToInstrs stmt =
 
     -- Handle substaction
     -- x = 2 - 2 -> mov x, 2; sub x, 2
-    (Let _ binding (BinOp Ast.Sub (Const _ num1) (Const _ num2))) -> do
+    (Let _ binding (BinOp Ast.Sub (Const _ (NativeInt num1)) (Const _ (NativeInt num2)))) -> do
       x <- getStackMapping binding
       pure
         [ Mov x num1,
@@ -163,7 +163,7 @@ fromStmtToInstrs stmt =
         ]
 
     -- x = 2 - y -> mov rax, 2; sub rax, y; mov x rax
-    (Let _ binding (BinOp Ast.Sub (Const _ num) (Var _ binding2))) -> do
+    (Let _ binding (BinOp Ast.Sub (Const _ (NativeInt num)) (Var _ binding2))) -> do
       x <- getStackMapping binding
       y <- getStackMapping binding2
       pure
@@ -173,7 +173,7 @@ fromStmtToInstrs stmt =
         ]
 
     -- x = y - 2 -> mov rax, y; sub rax, 2; mov x rax
-    (Let _ binding (BinOp Ast.Sub (Var _ binding2) (Const _ num))) -> do
+    (Let _ binding (BinOp Ast.Sub (Var _ binding2) (Const _ (NativeInt num)))) -> do
       x <- getStackMapping binding
       y <- getStackMapping binding2
       pure

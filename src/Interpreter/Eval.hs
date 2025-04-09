@@ -8,22 +8,30 @@ import Data.Maybe
 import qualified Data.Text as T
 import Prelude as P
 
-type Env = M.Map T.Text Int
+type Env = M.Map T.Text NativeVal
 
-data StmtResult = StmtResult {getEnv :: Env, getResult :: Maybe Int} deriving (Show, Eq)
+data StmtResult = StmtResult {getEnv :: Env, getResult :: Maybe NativeVal} deriving (Show, Eq)
 
 createEnv :: Env
 createEnv = empty
 
 --- Interpreter
-interpExpr :: Env -> Expr -> Either T.Text Int
+interpExpr :: Env -> Expr -> Either T.Text NativeVal
 interpExpr _ (Const _ty n) = Right n
 -- interpExpr env (ExprCall (Func {funcId = "read_input"})) = Right 42
-interpExpr env (UnaryOp Neg expr) = fmap (0 -) (interpExpr env expr)
-interpExpr env (BinOp Add left right) = (+) <$> interpExpr env left <*> interpExpr env right
-interpExpr env (BinOp Sub left right) = (-) <$> interpExpr env left <*> interpExpr env right
+interpExpr env (UnaryOp Neg expr) =
+  let val = interpExpr env expr
+   in case val of
+        Right (NativeInt x) -> Right (NativeInt (negate x))
+        _otherwise -> Left (T.pack ("Can't negate non int val" <> show val))
+interpExpr env (BinOp Add left right) = fmap NativeInt $ (+) <$> intFromNativeVal (interpExpr env left) <*> intFromNativeVal (interpExpr env right)
+interpExpr env (BinOp Sub left right) = fmap NativeInt $ (-) <$> intFromNativeVal (interpExpr env left) <*> intFromNativeVal (interpExpr env right)
 interpExpr env (Var _ty binding) = maybeToRight ("Can't find variable " <> binding) (M.lookup binding env)
 interpExpr _ expr = Left (T.pack ("Error interpreting expression: " <> show expr))
+
+intFromNativeVal :: Either T.Text NativeVal -> Either T.Text Int
+intFromNativeVal (Right (NativeInt x)) = Right x
+intFromNativeVal x = Left $ T.pack $ "Can'get int from" <> show x
 
 emptyStmtResult :: StmtResult
 emptyStmtResult = StmtResult empty Nothing

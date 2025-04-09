@@ -2,6 +2,7 @@
 
 module Parser.Parser where
 
+import Ast.Ast (NativeVal (NativeInt))
 import qualified Ast.Ast as Ast
 import Control.Monad
 import Control.Monad.Combinators.Expr (Operator (InfixL), makeExprParser)
@@ -28,7 +29,7 @@ parseProgram = do
   return (Ast.Program stmts)
 
 parseStmt :: Parser Ast.Stmt
-parseStmt = lexeme $ choice [parsePrint, parseReturn, try parseLet <|> parseLetToInfer]
+parseStmt = lexeme $ choice [block parseStmt, parsePrint, parseReturn, try parseLet <|> parseLetToInfer]
 
 -- x : int = 3 + 3;
 parseLet :: Parser Ast.Stmt
@@ -82,7 +83,7 @@ parsePrint = label "print" . lexeme $
 
 --- | Exprs
 parseTerm :: Parser Ast.Expr
-parseTerm = choice [parens parseExpr, parseSignedInt, parseUint, parseVar]
+parseTerm = choice [parens parseExpr, try parseSignedInt <|> parseNegation, parseUint, parseVar]
 
 parseExpr :: Parser Ast.Expr
 parseExpr = makeExprParser parseTerm opTable
@@ -103,15 +104,26 @@ binary :: Text -> (Ast.Expr -> Ast.Expr -> Ast.Expr) -> Operator Parser Ast.Expr
 binary name f = InfixL (f <$ symbol name)
 
 parseUint :: Parser Ast.Expr
-parseUint = Ast.Const I64 <$> lexeme (L.decimal <?> "integer")
+parseUint = Ast.Const I64 . NativeInt <$> lexeme (L.decimal <?> "integer")
+
+-- parseBool :: Parser Ast.Expr
+-- parseBool = Ast.Const TyBool $ NativeBool <$> lexeme (L.decimal <?> "integer")
 
 parseSignedInt :: Parser Ast.Expr
 parseSignedInt = label "signed int" . lexeme $ do
   void (symbol "-")
-  Ast.UnaryOp Ast.Neg . Ast.Const I64 <$> L.decimal
+  Ast.UnaryOp Ast.Neg . Ast.Const I64 . NativeInt <$> L.decimal
+
+parseNegation :: Parser Ast.Expr
+parseNegation = label "signed int" . lexeme $ do
+  void (symbol "-")
+  Ast.UnaryOp Ast.Neg <$> parseExpr
 
 parseId :: Parser Text
-parseId = label "identifier" . lexeme $ fmap pack $ (:) <$> letterChar <*> many alphaNumChar
+parseId = label "identifier" . lexeme $ do
+  firstLetter <- letterChar
+  rest <- many (alphaNumChar <|> char '-' <|> char '_')
+  pure $ pack (firstLetter : rest)
 
 parseTypeId :: TypeInfo -> Parser Type
 parseTypeId typeInfo = label "type identifier" . failsIfError . lexeme $ fmap (Types.Parsing.fromTypeId typeInfo . pack) $ (:) <$> letterChar <*> many alphaNumChar

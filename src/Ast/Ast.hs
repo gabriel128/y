@@ -20,8 +20,11 @@ data BinOp
 
 type Label = T.Text
 
+data NativeVal = NativeInt Int | NativeBool Bool
+  deriving (Eq, Show)
+
 data Expr
-  = Const NativeType Int
+  = Const NativeType NativeVal
   | UnaryOp UnaryOp Expr
   | BinOp BinOp Expr Expr
   | Var Type Label
