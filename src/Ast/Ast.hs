@@ -1,9 +1,14 @@
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE GADTs #-}
+
 module Ast.Ast where
 
 import qualified Data.Text as T
-import Types.Defs
 
-data Func = Func {funcId :: T.Text, funcArgs :: [Expr]}
+data FuncLocalInfo = FuncLocalInfo
+  deriving (Eq, Show)
+
+data Func = Func {funcId :: T.Text, funcArgs :: [Expr], funcLocalInfo :: FuncLocalInfo}
   deriving (Eq, Show)
 
 data UnaryOp
@@ -23,24 +28,22 @@ type Label = T.Text
 data NativeVal = NativeInt Int | NativeBool Bool
   deriving (Eq, Show)
 
-data Expr
-  = Const NativeType NativeVal
-  | UnaryOp UnaryOp Expr
-  | BinOp BinOp Expr Expr
-  | Var Type Label
+data Expr where
+  Const :: NativeVal -> Expr
+  UnaryOp :: UnaryOp -> Expr -> Expr
+  BinOp :: BinOp -> Expr -> Expr -> Expr
+  Var :: Label -> Expr
   deriving (Eq, Show)
 
-data LetModifier = Imm | Mut
-  deriving (Eq, Show)
-
-data Stmt
-  = Let Type Label Expr
-  | Print Expr
-  | Return Expr
+data Stmt where
+  Let :: Label -> Expr -> Stmt
+  Print :: Expr -> Stmt
+  Return :: Expr -> Stmt
   deriving (Eq, Show)
 
 -- A program is a sequence of statements
-newtype Program = Program {progStmts :: [Stmt]} deriving (Show, Eq)
+newtype Program = Program {progStmts :: [Stmt]}
+  deriving (Show, Eq)
 
 newProgram :: [Stmt] -> Program
 newProgram = Program

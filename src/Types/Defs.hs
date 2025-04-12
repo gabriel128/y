@@ -1,27 +1,38 @@
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
+
 module Types.Defs where
 
-data NativeType = I64 | U64 | TyBool
+data NativeType = I64 | U64 | TyBool | Unit
   deriving (Eq)
 
-data TypeInfo = ImmTy | MutTy
+-- data SomeType = forall a. SomeType (Type a)
+
+data Type where
+  TyNative :: TypeMeta -> NativeType -> Type
+  TyToInfer :: Type
   deriving (Eq)
 
-data Type = Native TypeInfo NativeType | TyToInfer | Unit
+newtype TypeMeta = TypeMeta {mut :: Bool}
   deriving (Eq)
 
-instance Show TypeInfo where
-  show ImmTy = "immutable"
-  show MutTy = "mutable"
+mkImmNativeType :: NativeType -> Type
+mkImmNativeType = TyNative TypeMeta {mut = False}
+
+instance Show TypeMeta where
+  show TypeMeta {mut = True} = "mut"
+  show TypeMeta {mut = False} = "immut"
 
 instance Show NativeType where
   show I64 = "i64"
   show U64 = "u64"
   show TyBool = "bool"
+  show Unit = "Unit"
 
 instance Show Type where
-  show (Native ty_info ntype) = show ty_info <> " " <> show ntype
+  show (TyNative ty_info typeval) = show ty_info <> " " <> show typeval
   show TyToInfer = "undefined"
-  show Unit = "Unit"
 
 -- | There are cases where we want to cast immutable type to mutable, this function helps
 -- with that e.g.
@@ -29,5 +40,5 @@ instance Show Type where
 -- y : mut i64 = x + 3;
 -- y = y + 1;
 sameTypeIgnoreMut :: Type -> Type -> Bool
-sameTypeIgnoreMut (Native _ typeInfo) (Native _ typeInfo') = typeInfo == typeInfo'
+sameTypeIgnoreMut (TyNative _ typeval) (TyNative _ typeval') = typeval == typeval'
 sameTypeIgnoreMut a b = a == b

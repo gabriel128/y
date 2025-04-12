@@ -1,6 +1,6 @@
 module Lib where
 
-import Ast.Ast (Program)
+import Ast.TypedAst (TypedProgram)
 import Context (Context, defaultContext)
 import Data.Text (Text)
 import EffUtils (StateErrorEff, runStateErrorEff)
@@ -15,7 +15,7 @@ parseAndCompile text = do
   prog <- runProgramParser text
   runStateErrorEff Context.defaultContext (passes prog)
 
-passes :: Program -> StateErrorEff Context Text Text
+passes :: TypedProgram -> StateErrorEff Context Text Text
 passes prog = do
   prog' <- TypeChecker.typeCheck prog
   prog'' <- Atomizer.removeComplexStmts prog'

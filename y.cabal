@@ -28,6 +28,7 @@ library
   exposed-modules:
       Ast.Ast
       Ast.Examples
+      Ast.TypedAst
       Context
       EffUtils
       Experiments
@@ -138,6 +139,7 @@ test-suite y-test
       NasmTests
       ParserTests
       RegisterAllocTests
+      TypeCheckerTests
       Paths_y
   hs-source-dirs:
       test

@@ -6,7 +6,7 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
 
 test_full_progs :: TestTree
-test_full_progs = testGroup "Tests" [unitTests]
+test_full_progs = testGroup "Example tests" [unitTests]
 
 compileFile :: String -> String -> IO String
 compileFile inFile outFile =

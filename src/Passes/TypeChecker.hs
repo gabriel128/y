@@ -1,16 +1,13 @@
 module Passes.TypeChecker where
 
--- \|
+-- \| Type Checker
 --
--- Type Checker
---
--- This type checker can be placed before or after the Atomizer.
--- Doing type checking after the atomizer ensures that typechecking statements
--- is O(n). However having it after will require workarounds for type errors since
--- the atomizer will create temp variables so for now assume that this is going
--- to be the first thing that runs.
+-- Converts a TypedProgram to a valid Program. In other words if a program type checks is
+-- considered valid
 
-import Ast.Ast (BinOp (..), Expr (BinOp, Const, UnaryOp, Var), Program (progStmts), Stmt (Let, Print, Return), UnaryOp (Neg))
+import Ast.Ast (BinOp, Program (progStmts))
+import qualified Ast.Ast as Ast
+import Ast.TypedAst
 import Context (Context)
 import Control.Carrier.Error.Church (liftEither)
 import Data.Either.Combinators (maybeToRight)
@@ -19,36 +16,37 @@ import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import EffUtils (StateErrorEffM)
-import Types.Defs (NativeType (..), Type (Native, TyToInfer), TypeInfo (..), sameTypeIgnoreMut)
+import Types.Defs (NativeType (..), Type (..), sameTypeIgnoreMut)
 
 type VarToTypeMappings = M.Map Text Type
 
-typeCheck :: Program -> StateErrorEffM Context Text m Program
-typeCheck program = do
-  let stmts = progStmts program
+typeCheck :: TypedProgram -> StateErrorEffM Context Text m Program
+typeCheck typedProgram = do
+  let stmts = typedProgStmts typedProgram
   let varToTypesMap = M.empty
   _ <- liftEither $ foldl' reducer (Right varToTypesMap) stmts
-  pure program
+  let untypedStmts = fmap from stmts
+  pure (Ast.newProgram untypedStmts)
   where
-    reducer :: Either Text VarToTypeMappings -> Stmt -> Either Text VarToTypeMappings
+    reducer :: Either Text VarToTypeMappings -> TypedStmt -> Either Text VarToTypeMappings
     reducer typeMap stmt = do
       typeMap' <- typeMap
       typeCheckStmt stmt typeMap'
 
-typeCheckStmt :: Stmt -> VarToTypeMappings -> Either Text VarToTypeMappings
-typeCheckStmt stmt typeMap =
-  case stmt of
-    Return expr -> do
+typeCheckStmt :: TypedStmt -> VarToTypeMappings -> Either Text VarToTypeMappings
+typeCheckStmt tstmt typeMap =
+  case tstmt of
+    (TReturn _ expr) -> do
       _ <- getExprType expr typeMap
       Right typeMap
-    Print expr -> do
+    (TPrint _ expr) -> do
       _ <- getExprType expr typeMap
       Right typeMap
-    Let TyToInfer label expr -> do
+    (TLet TyToInfer label expr) -> do
       exprType <- getExprType expr typeMap
       let newMap = M.insert label exprType typeMap
       Right newMap
-    Let letType label expr -> do
+    (TLet letType label expr) -> do
       exprType <- getExprType expr typeMap
       if sameTypeIgnoreMut letType exprType
         then do
@@ -57,19 +55,20 @@ typeCheckStmt stmt typeMap =
         else Left $ T.pack ("type check failed for var definition on line x: " <> show letType <> " doesn't match with " <> show exprType)
 
 -- TODO add linenumbers
-getExprType :: Expr -> VarToTypeMappings -> Either Text Type
-getExprType expr typeMap =
-  case expr of
-    Const nativeType _val -> Right . Native ImmTy $ nativeType
-    Var TyToInfer label -> do
+getExprType :: TypedExpr -> VarToTypeMappings -> Either Text Type
+getExprType texpr typeMap =
+  case texpr of
+    TConst ty _val -> Right ty
+    TVar TyToInfer label -> do
       maybeToRight (T.pack ("Can't infer type for" <> show label)) $ M.lookup label typeMap
-    Var ty _ -> Right ty
-    UnaryOp Neg expr' -> do
+    TVar ty _ -> Right ty
+    TUnaryOp TyToInfer Ast.Neg expr' -> do
       theType <- getExprType expr' typeMap
       case theType of
-        Native _ a | a `elem` [I64, U64] -> Right theType
+        (TyNative _ a) | a `elem` [I64, U64] -> Right theType
         _otherwise -> Left $ T.pack ("Negation only take numeric types, found: " <> show theType)
-    BinOp op leftExpr rightExpr -> do
+    TUnaryOp ty _ _ -> Right ty
+    TBinOp TyToInfer op leftExpr rightExpr -> do
       leftType <- getExprType leftExpr typeMap
       rightType <- getExprType rightExpr typeMap
       if leftType == rightType
@@ -77,8 +76,9 @@ getExprType expr typeMap =
           _ <- typeCheckBinOp op leftType
           Right leftType
         else Left $ T.pack ("type check failed for " <> show op <> "on line x: lhs " <> show leftType <> "doesn't match with rhs " <> show rightType)
+    TBinOp ty _ _ _ -> Right ty
 
 typeCheckBinOp :: BinOp -> Type -> Either Text ()
-typeCheckBinOp binop (Native _ nativeTy)
-  | binop `elem` [Add, Sub, Mul, Div, ShiftL] && nativeTy `elem` [I64, U64] = Right ()
+typeCheckBinOp binop (TyNative _ nativeTy)
+  | binop `elem` [Ast.Add, Ast.Sub, Ast.Mul, Ast.Div, Ast.ShiftL] && nativeTy `elem` [I64, U64] = Right ()
 typeCheckBinOp binop ty = Left $ T.pack $ "type " <> show ty <> " can't be handled by " <> show binop

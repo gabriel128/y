@@ -17,7 +17,7 @@ createEnv = empty
 
 --- Interpreter
 interpExpr :: Env -> Expr -> Either T.Text NativeVal
-interpExpr _ (Const _ty n) = Right n
+interpExpr _ (Const n) = Right n
 -- interpExpr env (ExprCall (Func {funcId = "read_input"})) = Right 42
 interpExpr env (UnaryOp Neg expr) =
   let val = interpExpr env expr
@@ -26,7 +26,7 @@ interpExpr env (UnaryOp Neg expr) =
         _otherwise -> Left (T.pack ("Can't negate non int val" <> show val))
 interpExpr env (BinOp Add left right) = fmap NativeInt $ (+) <$> intFromNativeVal (interpExpr env left) <*> intFromNativeVal (interpExpr env right)
 interpExpr env (BinOp Sub left right) = fmap NativeInt $ (-) <$> intFromNativeVal (interpExpr env left) <*> intFromNativeVal (interpExpr env right)
-interpExpr env (Var _ty binding) = maybeToRight ("Can't find variable " <> binding) (M.lookup binding env)
+interpExpr env (Var binding) = maybeToRight ("Can't find variable " <> binding) (M.lookup binding env)
 interpExpr _ expr = Left (T.pack ("Error interpreting expression: " <> show expr))
 
 intFromNativeVal :: Either T.Text NativeVal -> Either T.Text Int
@@ -37,7 +37,7 @@ emptyStmtResult :: StmtResult
 emptyStmtResult = StmtResult empty Nothing
 
 interpStmt :: Env -> Stmt -> Either T.Text StmtResult
-interpStmt env (Let _ty binding expr) = do
+interpStmt env (Let binding expr) = do
   exprRes <- interpExpr env expr
   let env' = M.insert binding exprRes env
   pure (StmtResult env' Nothing)
