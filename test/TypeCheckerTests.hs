@@ -14,7 +14,7 @@ import EffUtils (runStateErrorEff)
 import Parser.Parser
 import Passes.TypeChecker
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
+import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
 import Utils
 
 -- import Types.Defs
@@ -38,5 +38,9 @@ unitTests =
     -- --
     testCase "Type inference" $ do
       _prog <- liftEither $ runTypeCheck <$> runProgramParser "x = 8;"
-      assertBool "" True
+      assertBool "" True,
+    -- --
+    testCase "Type checks division by 0" $ do
+      prog <- liftEither $ runTypeCheck <$> runProgramParser "x = 8 / 0;"
+      assertBool "" (isLeft prog)
   ]
