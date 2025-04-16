@@ -10,6 +10,11 @@ Why was it originally called yacll? Just Why?
 
 That's a question I keep asking myself every day, also "How?"
 
+## The _Y_ Foundation
+
+This language backed up by the Y foundation where I'm the director, founder, engineer, secretary
+and decision board.
+
 # Passes
 
 The compiler goes through a couple of passes and intermediate representations
@@ -26,7 +31,7 @@ if it finds an incorrect program.
 # How to compile a .y file
 
 ```
-y -o output_binary_file_name -i program.y
+yc -o output_binary_file_name -i program.y
 ```
 
 # Effects

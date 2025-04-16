@@ -37,7 +37,7 @@ library:
     - src
 
 executables:
-  y-exe:
+  yc:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
