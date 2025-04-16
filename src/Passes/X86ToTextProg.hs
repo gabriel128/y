@@ -2,16 +2,16 @@
 
 module Passes.X86ToTextProg where
 
+import Context (Context)
+import qualified Context
 import Control.Carrier.State.Strict
 import Data.List (intersperse)
 import Data.Text (Text, pack)
 import qualified Data.Text as T
+import EffUtils (StateErrorEff)
 import qualified Nasm.Data as Nasm
 import NeatInterpolation
-import EffUtils (StateErrorRndEff, StateErrorEff)
 import Utils
-import qualified Context
-import Context (Context)
 
 instrsToText :: [Nasm.Instr] -> StateErrorEff Context Text Text
 instrsToText intrs = do

@@ -6,4 +6,3 @@ data PassError
   = PassError Text
   | GenericError Text
   deriving (Show)
-

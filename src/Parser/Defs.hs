@@ -20,3 +20,6 @@ symbol = L.symbol spaceConsumer
 
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
+
+block :: Parser a -> Parser a
+block = between (symbol "{") (symbol "}")

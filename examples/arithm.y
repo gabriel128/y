@@ -1,6 +1,9 @@
-let x := 9;
-let y := 7;
-let z := (x + (y - 8));
+x : u64 = 9;
+y = 7;
+z : mut u64 = (x + (y - 8));
+
+// Unused
+i : mut u64 = 0;
 
 print(z);
 

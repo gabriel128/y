@@ -5,8 +5,6 @@
 
 module Main where
 
--- import System.Console.CmdArgs
-
 import Control.Arrow (left)
 import Data.Text (pack, unpack)
 import Lib
@@ -57,7 +55,7 @@ runCompiler yFile outFile = do
   printLn $ "Asm Finished " <> out
   printLn "Linking..."
 
-  lOut <- readFromProcess "gcc" [objFile, "-z", "noexecstack", "-o", outFile] []
+  lOut <- readFromProcess "gcc" [objFile, "--static", "-z", "noexecstack", "-o", outFile] []
   printLn $ "Linking Finished" <> lOut
 
 replaceYExt :: String -> String -> Either String String

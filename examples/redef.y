@@ -1,7 +1,7 @@
-let x := 9;
-let y := 7;
-let x := 10;
-let z := (x + y);
+x = 9;
+y = 7;
+x = 10;
+z = (x + y);
 
 print(z);
 

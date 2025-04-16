@@ -1,6 +1,6 @@
-let x := 9;
-let y := 100;
-let z := x + y;
+x = 9;
+y : u64 = 100;
+z = x + y;
 
 print(z);
 print(3 + 3);

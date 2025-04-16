@@ -3,10 +3,10 @@
 module Optimizations.RegisterAlloc where
 
 import Ast.Ast
+import Context (Context)
 import Data.Set (Set, difference, empty, fromList, union)
 import Data.Text (Text)
 import EffUtils (StateErrorEff)
-import Context (Context)
 
 -- Available Registers  rbx rcx rdx rsi rdi r8 r9 r10 r11 r12 r13 r14
 

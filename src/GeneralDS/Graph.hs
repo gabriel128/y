@@ -104,8 +104,8 @@ dfs source (Graph nodes) = reverse . snd <$> go (Map.lookup source nodes) Set.em
     go (Just (Node nodeId edges)) visited result
       | nodeId `Set.member` visited = Right (visited, result)
       | otherwise = do
-        let visited' = Set.insert nodeId visited
-        foldl' reducer (Right (visited', nodeId : result)) edges
+          let visited' = Set.insert nodeId visited
+          foldl' reducer (Right (visited', nodeId : result)) edges
 
     reducer :: Either Text (Set a, [a]) -> a -> Either Text (Set a, [a])
     reducer visited nodeId = do
@@ -123,13 +123,13 @@ bfs source (Graph nodes) = doBfs (Map.lookup source nodes)
     go visited queue distance
       | Queue.len queue == 0 = Right []
       | otherwise = do
-        let currentNodeIds = Queue.toList queue
-        let visited' = foldr Set.insert visited currentNodeIds
-        currentNodes <- maybeToRight "Node not found" (mapM (`Map.lookup` nodes) currentNodeIds)
-        let nodeIdsToEqueue = concatMap (Set.toList . flip Set.difference visited' . nodeEdges) currentNodes
-        let nextQueue = foldl' (flip Queue.enqueue) Queue.new nodeIdsToEqueue
-        let resultWithDistance = fmap (distance,) currentNodeIds
-        (++) <$> Right resultWithDistance <*> go visited' nextQueue (distance + 1)
+          let currentNodeIds = Queue.toList queue
+          let visited' = foldr Set.insert visited currentNodeIds
+          currentNodes <- maybeToRight "Node not found" (mapM (`Map.lookup` nodes) currentNodeIds)
+          let nodeIdsToEqueue = concatMap (Set.toList . flip Set.difference visited' . nodeEdges) currentNodes
+          let nextQueue = foldl' (flip Queue.enqueue) Queue.new nodeIdsToEqueue
+          let resultWithDistance = fmap (distance,) currentNodeIds
+          (++) <$> Right resultWithDistance <*> go visited' nextQueue (distance + 1)
 
 -- | Returns the node given a node val/id using DFS
 dfsNode :: forall a. Ord a => a -> Graph a -> Maybe (Node a)

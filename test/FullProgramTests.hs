@@ -6,11 +6,11 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
 
 test_full_progs :: TestTree
-test_full_progs = testGroup "Tests" [unitTests]
+test_full_progs = testGroup "Example tests" [unitTests]
 
 compileFile :: String -> String -> IO String
 compileFile inFile outFile =
-  readProcess "/usr/local/bin/stack" ["run", "--", "-i", inFile, "-o", outFile] []
+  readProcess "stack" ["run", "--", "-i", inFile, "-o", outFile] []
 
 runFile :: String -> IO String
 runFile file = readProcess file [] []
@@ -40,10 +40,10 @@ unitTests =
         assertEqual "" "17\n" runRes,
       testCase "Compilation error, unbound vars" $ do
         compRes <- compileFile "./examples/unbound.y" "./test/results/unbound"
-        assertBool compRes ("Var not bound: x" `isInfixOf` compRes),
+        assertBool compRes ("are you sure you declared it?" `isInfixOf` compRes),
       testCase "Compilation error" $ do
         compRes <- compileFile "./examples/comp_err.y" "./test/results/comp_err"
-        assertBool compRes ("expecting identifier or white space" `isInfixOf` compRes),
+        assertBool compRes ("expecting mut or type identifier" `isInfixOf` compRes),
       testCase "Compilation error 2" $ do
         compRes <- compileFile "./examples/comp_err2.y" "./test/results/comp_err"
         assertBool compRes ("unexpected ')" `isInfixOf` compRes)

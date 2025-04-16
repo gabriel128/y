@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -28,6 +28,7 @@ library
   exposed-modules:
       Ast.Ast
       Ast.Examples
+      Ast.TypedAst
       Context
       EffUtils
       Experiments
@@ -44,7 +45,10 @@ library
       Passes.Atomizer
       Passes.Error
       Passes.StmtsToX86
+      Passes.TypeChecker
       Passes.X86ToTextProg
+      Types.Defs
+      Types.Parsing
       Utils
   other-modules:
       Paths_y
@@ -84,7 +88,7 @@ library
     , text
   default-language: Haskell2010
 
-executable y-exe
+executable yc
   main-is: Main.hs
   hs-source-dirs:
       app
@@ -135,6 +139,7 @@ test-suite y-test
       NasmTests
       ParserTests
       RegisterAllocTests
+      TypeCheckerTests
       Paths_y
   hs-source-dirs:
       test
