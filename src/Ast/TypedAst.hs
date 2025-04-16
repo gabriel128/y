@@ -21,6 +21,7 @@ data TypedStmt where
 
 -- A program is a sequence of statements
 newtype TypedProgram = TypedProgram {typedProgStmts :: [TypedStmt]}
+  deriving (Eq, Show)
 
 class FromTo a b where
   from :: a -> b

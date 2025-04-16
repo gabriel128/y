@@ -1,4 +1,4 @@
-let z := x + 8;
+z = x + 8;
 
 print(z);
 

@@ -9,12 +9,12 @@ import Ast.TypedAst
 import Context (Context, defaultContext)
 import qualified Data.Bifunctor
 import Data.Either.Combinators
-import Data.Text (Text, unpack)
+import Data.Text
 import EffUtils (runStateErrorEff)
 import Parser.Parser
 import Passes.TypeChecker
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (assertBool, assertEqual, assertFailure, testCase)
+import Test.Tasty.HUnit
 import Utils
 
 -- import Types.Defs

@@ -34,7 +34,7 @@ parseStmt = lexeme $ choice [block parseStmt, parsePrint, parseReturn, try parse
 
 -- x : int = 3 + 3;
 parseLet :: Parser TypedStmt
-parseLet = label "let" . lexeme $
+parseLet = label "assignment" . lexeme $
   do
     void space
     var <- parseId
@@ -47,7 +47,7 @@ parseLet = label "let" . lexeme $
     return $ TLet ty var expr
 
 parseTypeInfo :: Parser TypeMeta
-parseTypeInfo = label "let" . lexeme $
+parseTypeInfo = label "mut" . lexeme $
   do
     void space
     typeInfo <- option "" (symbol "mut")

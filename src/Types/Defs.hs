@@ -20,6 +20,9 @@ newtype TypeMeta = TypeMeta {mut :: Bool}
 mkImmNativeType :: NativeType -> Type
 mkImmNativeType = TyNative TypeMeta {mut = False}
 
+mkMutNativeType :: NativeType -> Type
+mkMutNativeType = TyNative TypeMeta {mut = True}
+
 instance Show TypeMeta where
   show TypeMeta {mut = True} = "mut"
   show TypeMeta {mut = False} = "immut"

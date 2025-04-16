@@ -62,7 +62,9 @@ getExprType texpr typeMap =
   case texpr of
     TConst ty _val -> Right ty
     TVar TyToInfer label -> do
-      maybeToRight (T.pack ("Can't infer type for" <> show label)) $ M.lookup label typeMap
+      maybeToRight
+        (T.pack ("Can't infer type for " <> show label <> ", are you sure you declared it? :|"))
+        $ M.lookup label typeMap
     TVar ty _ -> Right ty
     TUnaryOp TyToInfer Ast.Neg expr' -> do
       theType <- getExprType expr' typeMap

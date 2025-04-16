@@ -20,7 +20,8 @@ It is from Ast to Ast
 representation. It goes from Ast to Nasm
 3. X86ToTextProg - Picks the NASM IR and transforms it to a final text, used to generate an .asm 
 later on
-4. TypeChecker - WIP
+4. TypeChecker - Aggressive type checker. Aggressive as in, it will insult you and misstreat you 
+if it finds an incorrect program.
 
 # How to compile a .y file
 
@@ -71,12 +72,12 @@ e.g.
 
 ```
 // Immutable type
-x : i64 = 3;
+x : u64 = 3;
 
 // Mutable type
-i : mut i64 = 0;
+i : mut u64 = 0;
 
 // Automatic Mutability cast
-x : mut i64 = x;
+x : mut u64 = x;
 ```
 
