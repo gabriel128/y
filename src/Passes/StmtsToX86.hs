@@ -100,21 +100,22 @@ fromStmtToInstrs stmt =
     -- print 3
     (Print (Const (NativeInt num))) ->
       pure
-        [ Mov Rdi printFormatLabel,
+        [ LeaRel Rdi printFormatLabel,
           Mov Rsi num,
           Xor Rax Rax,
           Call "printf WRT ..plt"
         ]
+
     -- print x
     (Print (Var binding)) -> do
       x <- getStackMapping binding
       pure
-        [ Mov Rdi printFormatLabel,
+        [ LeaRel Rdi printFormatLabel,
           Mov Rsi x,
           Xor Rax Rax,
           Call "printf WRT ..plt"
         ]
-
+       
     -- Handle addition
     -- x = 2 + 2; -> mov x, 2; add x, 2
     (Let binding (BinOp Ast.Add (Const (NativeInt num1)) (Const (NativeInt num2)))) -> do

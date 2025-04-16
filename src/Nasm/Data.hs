@@ -43,8 +43,7 @@ data Instr where
   Pop :: (Print a, IsSimpleArg a) => a -> Instr
   Ret :: Instr
   Jmp :: Label -> Instr
-
--- Lea ::
+  LeaRel :: Reg -> Label -> Instr
 
 instance IsSimpleArg Imm
 
@@ -98,6 +97,7 @@ instance Print Instr where
   textPrint (Pop arg) = "pop " <> textPrint arg
   textPrint Ret = "ret"
   textPrint (Jmp label) = "jmp " <> textPrint label
+  textPrint (LeaRel dest label) = "lea " <> textPrint dest <> ", " <> "[rel " <> label <> "]"
 
 printFormatLabel :: Text
 printFormatLabel = "printf_format"

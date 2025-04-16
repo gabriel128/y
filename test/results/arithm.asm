@@ -24,7 +24,7 @@ start:
   add rax, [rbp-24] 
   mov qword [rbp-40], rax 
   mov qword [rbp-8], 0 
-  mov rdi, printf_format 
+  lea rdi, [rel printf_format] 
   mov rsi, [rbp-40] 
   xor rax, rax 
   call printf WRT ..plt 

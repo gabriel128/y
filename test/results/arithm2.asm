@@ -20,13 +20,13 @@ start:
   mov rax, [rbp-24] 
   add rax, [rbp-16] 
   mov qword [rbp-32], rax 
-  mov rdi, printf_format 
+  lea rdi, [rel printf_format] 
   mov rsi, [rbp-32] 
   xor rax, rax 
   call printf WRT ..plt 
   mov qword [rbp-8], 3 
   add qword [rbp-8], 3 
-  mov rdi, printf_format 
+  lea rdi, [rel printf_format] 
   mov rsi, [rbp-8] 
   xor rax, rax 
   call printf WRT ..plt 
