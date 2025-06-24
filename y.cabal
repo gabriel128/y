@@ -46,6 +46,7 @@ library
       Passes.TypedAtomizer
       Passes.Error
       Passes.StmtsToX86
+      Passes.TypedStmtsToX86
       Passes.TypeChecker
       Passes.X86ToTextProg
       Types.Defs

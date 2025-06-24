@@ -11,6 +11,7 @@ import qualified Passes.StmtsToX86 as StmtsToX86
 import qualified Passes.TypeChecker as TypeChecker
 import qualified Passes.X86ToTextProg
 import qualified Ast.Ast as Ast
+import qualified Passes.TypedStmtsToX86 as TypedStmtsToX86
 
 parseAndCompile :: Text -> Either Text (Context, Text)
 parseAndCompile text = do
@@ -20,7 +21,6 @@ parseAndCompile text = do
 passes :: TypedProgram -> StateErrorEff Context Text Text
 passes prog = do
   prog' <- TypeChecker.typeCheck prog
-  let untypedStmts = fmap from (typedProgStmts prog')
-  prog'' <- Atomizer.removeComplexStmts (Ast.newProgram untypedStmts)
-  nasmInstrs <- StmtsToX86.astToNasm prog''
+  prog'' <- TypedAtomizer.removeComplexStmts prog'
+  nasmInstrs <- TypedStmtsToX86.astToNasm prog''
   Passes.X86ToTextProg.instrsToText nasmInstrs
