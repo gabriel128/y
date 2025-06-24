@@ -1,4 +1,4 @@
-FROM fpco/stack-build:lts-22.33 as dependencies
+FROM fpco/stack-build:lts-23.25 as dependencies
 RUN mkdir /opt/build
 WORKDIR /opt/build
 
@@ -14,7 +14,7 @@ RUN stack build --system-ghc --dependencies-only
 
 # -------------------------------------------------------------------------------------------
 
-FROM haskell:9.6.6 as build
+FROM haskell:9.8.4 as build
 
 # Copy compiled dependencies from previous stage
 COPY --from=dependencies /root/.stack /root/.stack

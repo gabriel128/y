@@ -17,72 +17,84 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import EffUtils (StateErrorEffM)
 import Types.Defs (NativeType (..), Type (..), mkImmNativeType, sameTypeIgnoreMut)
+import qualified Ast.TypedAst as Ast
 
 type VarToTypeMappings = M.Map Text Type
 
-typeCheck :: TypedProgram -> StateErrorEffM Context Text m Program
+typeCheck :: TypedProgram -> StateErrorEffM Context Text m TypedProgram
 typeCheck typedProgram = do
   let stmts = typedProgStmts typedProgram
   let varToTypesMap = M.empty
-  _ <- liftEither $ foldl' reducer (Right varToTypesMap) stmts
-  let untypedStmts = fmap from stmts
-  pure (Ast.newProgram untypedStmts)
+  (_, inferredTypedStmts) <- liftEither $ foldl' reducer (Right (varToTypesMap, [])) stmts
+  -- let untypedStmts = fmap from stmts
+  pure (Ast.newTypedProgram (reverse inferredTypedStmts))
   where
-    reducer :: Either Text VarToTypeMappings -> TypedStmt -> Either Text VarToTypeMappings
-    reducer typeMap stmt = do
-      typeMap' <- typeMap
+    reducer :: Either Text (VarToTypeMappings, [TypedStmt]) -> TypedStmt -> Either Text (VarToTypeMappings, [TypedStmt])
+    reducer acc stmt = do
+      (typeMap', typedStmts) <- acc
       case typeCheckStmt stmt typeMap' of
-        Right x -> Right x
+        Right (x, tstmt) -> Right (x, tstmt : typedStmts)
         Left err -> Left $ T.pack $ "Type check failed for " <> show stmt <> "on line {x}: " <> show err
 
-typeCheckStmt :: TypedStmt -> VarToTypeMappings -> Either Text VarToTypeMappings
+typeCheckStmt :: TypedStmt -> VarToTypeMappings -> Either Text (VarToTypeMappings, TypedStmt)
 typeCheckStmt tstmt typeMap =
   case tstmt of
     (TReturn _ expr) -> do
-      _ <- getExprType expr typeMap
-      Right typeMap
-    (TPrint _ expr) -> do
-      _ <- getExprType expr typeMap
-      Right typeMap
+      typedExpr <- getTypedExpr expr typeMap
+      let ty = typeFromTExpr typedExpr
+      Right (typeMap, TReturn ty typedExpr)
+    (TPrint ty expr) -> do
+      typedExpr <- getTypedExpr expr typeMap
+      Right (typeMap, TPrint ty typedExpr)
     (TLet TyToInfer label expr) -> do
-      exprType <- getExprType expr typeMap
-      let newMap = M.insert label exprType typeMap
-      Right newMap
+      typedExpr <- getTypedExpr expr typeMap
+      let ty = typeFromTExpr typedExpr
+      let newMap = M.insert label ty typeMap
+      Right (newMap, TLet ty label typedExpr)
     (TLet letType label expr) -> do
-      exprType <- getExprType expr typeMap
-      if sameTypeIgnoreMut letType exprType
+      typedExpr <- getTypedExpr expr typeMap
+      let ty = typeFromTExpr typedExpr
+      if sameTypeIgnoreMut letType ty
         then do
           let newMap = M.insert label letType typeMap
-          Right newMap
-        else Left $ T.pack ("type check failed for var definition on line x: " <> show letType <> " doesn't match with " <> show exprType <> ". Duh!")
+          Right (newMap, TLet letType label typedExpr)
+        else Left $ T.pack ("type check failed for var definition on line x: " <> show letType <> " doesn't match with " <> show typedExpr <> ". Duh!")
 
 -- TODO add linenumbers
-getExprType :: TypedExpr -> VarToTypeMappings -> Either Text Type
-getExprType texpr typeMap =
+getTypedExpr :: TypedExpr -> VarToTypeMappings -> Either Text TypedExpr
+getTypedExpr texpr typeMap =
   case texpr of
-    TConst ty _val -> Right ty
+    tconst@(TConst _ty _val) -> Right tconst
     TVar TyToInfer label -> do
-      maybeToRight
-        (T.pack ("Can't infer type for " <> show label <> ", are you sure you declared it? :|"))
-        $ M.lookup label typeMap
-    TVar ty _ -> Right ty
+      ty <- maybeToRight (T.pack ("Can't infer type for " <> show label <> ", are you sure you declared it? :|")) $ M.lookup label typeMap
+      Right $ TVar ty label
+    tvar@(TVar _ty _) -> do
+      Right tvar
     TUnaryOp TyToInfer Ast.Neg expr' -> do
-      theType <- getExprType expr' typeMap
-      case theType of
-        (TyNative _ a) | a `elem` [I64, U64] -> Right theType
-        _otherwise -> Left $ T.pack ("Negation only take numeric types, found: " <> show theType)
-    TUnaryOp ty _ _ -> Right ty
+      typedExpr <- getTypedExpr expr' typeMap
+      case typeFromTExpr typedExpr of
+        ty@(TyNative _ a) | a `elem` [I64, U64] -> Right (TUnaryOp ty Ast.Neg typedExpr)
+        _otherwise -> Left $ T.pack ("Negation only take numeric types, found: " <> show typedExpr)
+    tunary@(TUnaryOp {}) -> Right tunary
     TBinOp TyToInfer op leftExpr rightExpr -> do
-      leftType <- getExprType leftExpr typeMap
-      rightType <- getExprType rightExpr typeMap
+      leftTypedExpr <- getTypedExpr leftExpr typeMap
+      rightTypedExpr <- getTypedExpr rightExpr typeMap
+      let leftType = typeFromTExpr leftTypedExpr
+      let rightType = typeFromTExpr rightTypedExpr
       _ <- typeCheckBinOp op leftType
       _ <- typeCheckBinOp op rightType
       _ <- checkDiv0 op rightExpr
       opType <- inferBinOp op leftType rightType
-      Right opType
-    TBinOp ty op _ rightExpr -> do
+      Right $ TBinOp opType op leftTypedExpr rightTypedExpr
+    tbinop@(TBinOp _ op _ rightExpr) -> do
       _ <- checkDiv0 op rightExpr
-      Right ty
+      Right tbinop
+
+-- ensureInferred :: TypedExpr -> Either Text ()
+-- ensureInferred typedExpr =
+--   case typeFromTExpr typedExpr of
+--     TyToInfer -> Left $ T.pack ("Couldn't infer: " <> show typedExpr <> " my bad!")
+--     _ -> Right ()
 
 typeCheckBinOp :: BinOp -> Type -> Either Text ()
 typeCheckBinOp binop (TyNative _ nativeTy)

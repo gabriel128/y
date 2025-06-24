@@ -1,3 +1,5 @@
+-- {-# DEPRECATED the non typed atomizer has been deprecated #-}
+
 -- Atomizer
 --
 -- removes complex expressions in statments

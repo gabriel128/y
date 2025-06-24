@@ -1,13 +1,10 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE TypeFamilies #-}
 
 module Types.Defs where
 
 data NativeType = I64 | U64 | TyBool | Unit
   deriving (Eq)
-
--- data SomeType = forall a. SomeType (Type a)
 
 data Type where
   TyNative :: TypeMeta -> NativeType -> Type
@@ -35,7 +32,7 @@ instance Show NativeType where
 
 instance Show Type where
   show (TyNative ty_info typeval) = show ty_info <> " " <> show typeval
-  show TyToInfer = "undefined"
+  show TyToInfer = "not-inferred"
 
 -- | There are cases where we want to cast immutable type to mutable, this function helps
 -- with that e.g.

@@ -1,4 +1,5 @@
-import AtomizeTests
+-- import AtomizeTests
+import TypedAtomizeTests
 import DsTests
 import FullProgramTests (test_full_progs)
 import NasmTests (test_nasm)
@@ -18,4 +19,5 @@ tests :: TestTree
 tests =
   testGroup
     "Tests"
-    [test_id_ir, test_parser, test_full_progs, test_reg_alloc, test_general_ds, dsProps, test_nasm, test_type_checking]
+    -- [test_id_ir, test_typed_atomizer, test_parser, test_full_progs, test_reg_alloc, test_general_ds, dsProps, test_nasm, test_type_checking]
+    [test_typed_atomizer, test_parser, test_full_progs, test_reg_alloc, test_general_ds, dsProps, test_nasm, test_type_checking]

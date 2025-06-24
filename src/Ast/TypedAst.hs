@@ -40,6 +40,13 @@ instance FromTo TypedExpr Ast.Expr where
 newTypedProgram :: [TypedStmt] -> TypedProgram
 newTypedProgram = TypedProgram
 
-typeFromStmt :: TypedStmt -> Type
-typeFromStmt (TLet t _ _) = t
-typeFromStmt _ = TyNative TypeMeta {mut = False} Unit
+tstmtType :: TypedStmt -> Type
+tstmtType (TLet t _ _) = t
+tstmtType (TReturn t _) = t
+tstmtType _ = TyNative TypeMeta {mut = False} Unit
+
+typeFromTExpr :: TypedExpr -> Type
+typeFromTExpr (TConst t _) = t
+typeFromTExpr (TUnaryOp t _ _) = t
+typeFromTExpr (TBinOp t _ _ _) = t
+typeFromTExpr (TVar t _) = t

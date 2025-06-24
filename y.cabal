@@ -43,6 +43,7 @@ library
       Parser.Defs
       Parser.Parser
       Passes.Atomizer
+      Passes.TypedAtomizer
       Passes.Error
       Passes.StmtsToX86
       Passes.TypeChecker
@@ -133,6 +134,7 @@ test-suite y-test
   main-is: TestLoader.hs
   other-modules:
       AtomizeTests
+      TypedAtomizeTests
       DsTests
       FullProgramTests
       InterpreterTests

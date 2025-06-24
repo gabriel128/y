@@ -2,7 +2,7 @@ ghc-options:
   yc: -Wall
 packages:
 - .
-resolver: lts-22.33
+resolver: lts-23.25
   # lts-18.28
   # compiler: ghc-8.10.7
 
