@@ -5,9 +5,8 @@ module Passes.TypeChecker where
 -- Converts a TypedProgram to a valid Program. In other words if a program type checks is
 -- considered valid
 
-import Ast.Ast (BinOp, Program)
+import Ast.Ast
 import qualified Ast.Ast as Ast
-import Ast.TypedAst
 import Context (Context)
 import Control.Carrier.Error.Church (liftEither)
 import Data.Either.Combinators (maybeToRight)
@@ -17,80 +16,79 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import EffUtils (StateErrorEffM)
 import Types.Defs (NativeType (..), Type (..), mkImmNativeType, sameTypeIgnoreMut)
-import qualified Ast.TypedAst as Ast
 
 type VarToTypeMappings = M.Map Text Type
 
-typeCheck :: TypedProgram -> StateErrorEffM Context Text m TypedProgram
+typeCheck :: Program -> StateErrorEffM Context Text m Program
 typeCheck typedProgram = do
-  let stmts = typedProgStmts typedProgram
+  let stmts = progStmts typedProgram
   let varToTypesMap = M.empty
-  (_, inferredTypedStmts) <- liftEither $ foldl' reducer (Right (varToTypesMap, [])) stmts
+  (_, inferredStmts) <- liftEither $ foldl' reducer (Right (varToTypesMap, [])) stmts
   -- let untypedStmts = fmap from stmts
-  pure (Ast.newTypedProgram (reverse inferredTypedStmts))
+  pure (Ast.newProgram (reverse inferredStmts))
   where
-    reducer :: Either Text (VarToTypeMappings, [TypedStmt]) -> TypedStmt -> Either Text (VarToTypeMappings, [TypedStmt])
+    reducer :: Either Text (VarToTypeMappings, [Stmt]) -> Stmt -> Either Text (VarToTypeMappings, [Stmt])
     reducer acc stmt = do
       (typeMap', typedStmts) <- acc
       case typeCheckStmt stmt typeMap' of
         Right (x, tstmt) -> Right (x, tstmt : typedStmts)
         Left err -> Left $ T.pack $ "Type check failed for " <> show stmt <> "on line {x}: " <> show err
 
-typeCheckStmt :: TypedStmt -> VarToTypeMappings -> Either Text (VarToTypeMappings, TypedStmt)
+typeCheckStmt :: Stmt -> VarToTypeMappings -> Either Text (VarToTypeMappings, Stmt)
 typeCheckStmt tstmt typeMap =
   case tstmt of
-    (TReturn _ expr) -> do
-      typedExpr <- getTypedExpr expr typeMap
-      let ty = typeFromTExpr typedExpr
-      Right (typeMap, TReturn ty typedExpr)
-    (TPrint ty expr) -> do
-      typedExpr <- getTypedExpr expr typeMap
-      Right (typeMap, TPrint ty typedExpr)
-    (TLet TyToInfer label expr) -> do
-      typedExpr <- getTypedExpr expr typeMap
-      let ty = typeFromTExpr typedExpr
+    (Return _ expr) -> do
+      typedExpr <- getExpr expr typeMap
+      let ty = typeFromExpr typedExpr
+      Right (typeMap, Return ty typedExpr)
+    (Print ty expr) -> do
+      typedExpr <- getExpr expr typeMap
+      Right (typeMap, Print ty typedExpr)
+    (Let TyToInfer label expr) -> do
+      typedExpr <- getExpr expr typeMap
+      let ty = typeFromExpr typedExpr
       let newMap = M.insert label ty typeMap
-      Right (newMap, TLet ty label typedExpr)
-    (TLet letType label expr) -> do
-      typedExpr <- getTypedExpr expr typeMap
-      let ty = typeFromTExpr typedExpr
+      Right (newMap, Let ty label typedExpr)
+    (Let letType label expr) -> do
+      typedExpr <- getExpr expr typeMap
+      let ty = typeFromExpr typedExpr
       if sameTypeIgnoreMut letType ty
         then do
           let newMap = M.insert label letType typeMap
-          Right (newMap, TLet letType label typedExpr)
+          Right (newMap, Let letType label typedExpr)
         else Left $ T.pack ("type check failed for var definition on line x: " <> show letType <> " doesn't match with " <> show typedExpr <> ". Duh!")
 
 -- TODO add linenumbers
-getTypedExpr :: TypedExpr -> VarToTypeMappings -> Either Text TypedExpr
-getTypedExpr texpr typeMap =
+getExpr :: Expr -> VarToTypeMappings -> Either Text Expr
+getExpr texpr typeMap =
   case texpr of
-    tconst@(TConst _ty _val) -> Right tconst
-    TVar TyToInfer label -> do
+    tconst@(Const _ty _val) -> Right tconst
+    Var TyToInfer label -> do
       ty <- maybeToRight (T.pack ("Can't infer type for " <> show label <> ", are you sure you declared it? :|")) $ M.lookup label typeMap
-      Right $ TVar ty label
-    tvar@(TVar _ty _) -> do
+      Right $ Var ty label
+    tvar@(Var _ty _) -> do
       Right tvar
-    TUnaryOp TyToInfer Ast.Neg expr' -> do
-      typedExpr <- getTypedExpr expr' typeMap
-      case typeFromTExpr typedExpr of
-        ty@(TyNative _ a) | a `elem` [I64, U64] -> Right (TUnaryOp ty Ast.Neg typedExpr)
+    UnaryOp TyToInfer Ast.Neg expr' -> do
+      typedExpr <- getExpr expr' typeMap
+      case typeFromExpr typedExpr of
+        ty@(TyNative _ a) | a `elem` [I64, U64] -> Right (UnaryOp ty Ast.Neg typedExpr)
         _otherwise -> Left $ T.pack ("Negation only take numeric types, found: " <> show typedExpr)
-    tunary@(TUnaryOp {}) -> Right tunary
-    TBinOp TyToInfer op leftExpr rightExpr -> do
-      leftTypedExpr <- getTypedExpr leftExpr typeMap
-      rightTypedExpr <- getTypedExpr rightExpr typeMap
-      let leftType = typeFromTExpr leftTypedExpr
-      let rightType = typeFromTExpr rightTypedExpr
+    tunary@(UnaryOp {}) -> Right tunary
+    BinOp TyToInfer op leftExpr rightExpr -> do
+      leftExpr <- getExpr leftExpr typeMap
+      rightExpr <- getExpr rightExpr typeMap
+      let leftType = typeFromExpr leftExpr
+      let rightType = typeFromExpr rightExpr
       _ <- typeCheckBinOp op leftType
       _ <- typeCheckBinOp op rightType
       _ <- checkDiv0 op rightExpr
       opType <- inferBinOp op leftType rightType
-      Right $ TBinOp opType op leftTypedExpr rightTypedExpr
-    tbinop@(TBinOp _ op _ rightExpr) -> do
+      Right $ BinOp opType op leftExpr rightExpr
+    tbinop@(BinOp _ op _ rightExpr) -> do
       _ <- checkDiv0 op rightExpr
       Right tbinop
 
--- ensureInferred :: TypedExpr -> Either Text ()
+-- ensureInferred :: Expr -> Either Text ()
 -- ensureInferred typedExpr =
 --   case typeFromTExpr typedExpr of
 --     TyToInfer -> Left $ T.pack ("Couldn't infer: " <> show typedExpr <> " my bad!")
@@ -112,8 +110,8 @@ inferBinOp _ (TyNative _ _) (TyNative _ _) = Right (mkImmNativeType U64)
 inferBinOp binop lty rty = Left $ T.pack $ "Can not infer " <> show lty <> " " <> show binop <> " " <> show rty
 
 -- | Division by zero is type checked if we know that the rhs is zero at typechecking type
-checkDiv0 :: BinOp -> TypedExpr -> Either Text ()
-checkDiv0 Ast.Div (TConst _ (Ast.NativeInt 0)) = Left $ T.pack "Can not divide by zero you idiot"
+checkDiv0 :: BinOp -> Expr -> Either Text ()
+checkDiv0 Ast.Div (Const _ (Ast.NativeInt 0)) = Left $ T.pack "Can not divide by zero you idiot"
 checkDiv0 _ _ = Right ()
 
 -- \| binop `elem` [Ast.Add, Ast.Sub, Ast.Mul, Ast.Div, Ast.ShiftL] && nativeTy `elem` [I64, U64] = Right ()

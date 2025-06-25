@@ -4,7 +4,7 @@
 
 module TypeCheckerTests (test_type_checking) where
 
-import Ast.TypedAst
+import Ast.Ast
 import Context (Context, defaultContext)
 import qualified Data.Bifunctor
 import Data.Either.Combinators
@@ -23,9 +23,9 @@ import Utils
 test_type_checking :: TestTree
 test_type_checking = testGroup "TypeChecker" unitTests
 
-runTypeCheck :: TypedProgram -> Either Text (Context, [TypedStmt])
+runTypeCheck :: Program -> Either Text (Context, [Stmt])
 runTypeCheck program =
-  fmap (Data.Bifunctor.second typedProgStmts) $ runStateErrorEff defaultContext $ typeCheck program
+  fmap (Data.Bifunctor.second progStmts) $ runStateErrorEff defaultContext $ typeCheck program
 
 unitTests :: [TestTree]
 unitTests =

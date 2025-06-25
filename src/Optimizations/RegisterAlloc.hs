@@ -35,18 +35,18 @@ buildLiveness stmts = snd $ foldr reducer (empty, []) stmts
        in (liveness, enrichedStmt : enrichedStmts)
 
 buildStmtLiveness :: Stmt -> LivenessAfterK -> LivenessBefore
-buildStmtLiveness (Let binding expr) livenessAfter =
+buildStmtLiveness (Let _ binding expr) livenessAfter =
   livenessBeforeK livenessAfter (fromList [binding]) (readsFromExpr expr)
-buildStmtLiveness stmt@(Return expr) livenessAfter =
+buildStmtLiveness stmt@(Return _ expr) livenessAfter =
   livenessBeforeK livenessAfter empty (readsFromExpr expr)
-buildStmtLiveness stmt@(Print expr) livenessAfter =
+buildStmtLiveness stmt@(Print _ expr) livenessAfter =
   livenessBeforeK livenessAfter empty (readsFromExpr expr)
 
 readsFromExpr :: Expr -> Set Text
-readsFromExpr (Const _) = empty
-readsFromExpr (Var binding) = fromList [binding]
-readsFromExpr (UnaryOp _ expr) = readsFromExpr expr
-readsFromExpr (BinOp _ expr expr') = readsFromExpr expr `union` readsFromExpr expr'
+readsFromExpr (Const _ _) = empty
+readsFromExpr (Var _ binding) = fromList [binding]
+readsFromExpr (UnaryOp _ _ expr) = readsFromExpr expr
+readsFromExpr (BinOp _ _ expr expr') = readsFromExpr expr `union` readsFromExpr expr'
 
 -- L_after(n) = {}
 -- L_before(k)  = (L_after(k) - W(k)) \union R(k)

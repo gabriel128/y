@@ -2,9 +2,8 @@
 
 module Parser.Parser where
 
-import Ast.Ast (NativeVal (NativeInt))
+import Ast.Ast
 import qualified Ast.Ast as Ast
-import Ast.TypedAst (TypedExpr (..), TypedProgram (..), TypedStmt (..))
 import Control.Monad
 import Control.Monad.Combinators.Expr (Operator (InfixL), makeExprParser)
 import Data.Text (Text, pack, unpack)
@@ -15,25 +14,25 @@ import qualified Text.Megaparsec.Char.Lexer as L
 import Types.Defs
 import qualified Types.Parsing
 
-runProgramParser :: Text -> Either Text TypedProgram
+runProgramParser :: Text -> Either Text Program
 runProgramParser input =
   case parse parseProgram "" input of
     Left err -> Left (pack $ errorBundlePretty err)
     Right out -> Right out
 
 -- Stmts
-parseProgram :: Parser TypedProgram
+parseProgram :: Parser Program
 parseProgram = do
   void spaceConsumer
   stmts <- many parseStmt
   void eof
-  return (TypedProgram stmts)
+  return (Program stmts)
 
-parseStmt :: Parser TypedStmt
+parseStmt :: Parser Stmt
 parseStmt = lexeme $ choice [block parseStmt, parsePrint, parseReturn, try parseLet <|> parseLetToInfer]
 
 -- x : int = 3 + 3;
-parseLet :: Parser TypedStmt
+parseLet :: Parser Stmt
 parseLet = label "assignment" . lexeme $
   do
     void space
@@ -44,7 +43,7 @@ parseLet = label "assignment" . lexeme $
     void (symbol "=")
     expr <- parseExpr
     void (symbol ";")
-    return $ TLet ty var expr
+    return $ Let ty var expr
 
 parseTypeInfo :: Parser TypeMeta
 parseTypeInfo = label "mut" . lexeme $
@@ -54,7 +53,7 @@ parseTypeInfo = label "mut" . lexeme $
     return (if typeInfo == "mut" then TypeMeta True else TypeMeta False)
 
 -- x = 3 + 3;
-parseLetToInfer :: Parser TypedStmt
+parseLetToInfer :: Parser Stmt
 parseLetToInfer = label "let inferred" . lexeme $
   do
     void space
@@ -62,63 +61,63 @@ parseLetToInfer = label "let inferred" . lexeme $
     void (symbol "=")
     expr <- parseExpr
     void (symbol ";")
-    return $ TLet TyToInfer var expr
+    return $ Let TyToInfer var expr
 
 -- return x;
-parseReturn :: Parser TypedStmt
+parseReturn :: Parser Stmt
 parseReturn = label "return" . lexeme $
   do
     void (string "return")
     void space1
     expr <- parseExpr
     void (symbol ";")
-    return . TReturn TyToInfer $ expr
+    return . Return TyToInfer $ expr
 
-parsePrint :: Parser TypedStmt
+parsePrint :: Parser Stmt
 parsePrint = label "print" . lexeme $
   do
     void (string "print")
     expr <- parens parseExpr
     void (symbol ";")
-    return $ TPrint (mkImmNativeType Unit) expr
+    return $ Print (mkImmNativeType Unit) expr
 
 --- | Exprs
-parseTerm :: Parser TypedExpr
+parseTerm :: Parser Expr
 parseTerm = choice [parens parseExpr, try parseSignedInt <|> parseNegation, parseUint, parseVar]
 
-parseExpr :: Parser TypedExpr
+parseExpr :: Parser Expr
 parseExpr = makeExprParser parseTerm opTable
 
-opTable :: [[Operator Parser TypedExpr]]
+opTable :: [[Operator Parser Expr]]
 opTable =
-  [ [ binary "*" (TBinOp TyToInfer Ast.Mul),
-      binary "/" (TBinOp TyToInfer Ast.Div)
+  [ [ binary "*" (BinOp TyToInfer Ast.Mul),
+      binary "/" (BinOp TyToInfer Ast.Div)
     ],
-    [ binary "+" (TBinOp TyToInfer Ast.Add),
-      binary "-" (TBinOp TyToInfer Ast.Sub)
+    [ binary "+" (BinOp TyToInfer Ast.Add),
+      binary "-" (BinOp TyToInfer Ast.Sub)
     ],
-    [ binary "<<" (TBinOp TyToInfer Ast.ShiftL)
+    [ binary "<<" (BinOp TyToInfer Ast.ShiftL)
     ]
   ]
 
-binary :: Text -> (TypedExpr -> TypedExpr -> TypedExpr) -> Operator Parser TypedExpr
+binary :: Text -> (Expr -> Expr -> Expr) -> Operator Parser Expr
 binary name f = InfixL (f <$ symbol name)
 
-parseUint :: Parser TypedExpr
-parseUint = TConst (mkImmNativeType U64) . NativeInt <$> lexeme (L.decimal <?> "integer")
+parseUint :: Parser Expr
+parseUint = Const (mkImmNativeType U64) . NativeInt <$> lexeme (L.decimal <?> "integer")
 
 -- parseBool :: Parser Ast.Expr
 -- parseBool = Ast.Const TyBool $ NativeBool <$> lexeme (L.decimal <?> "integer")
 
-parseSignedInt :: Parser TypedExpr
+parseSignedInt :: Parser Expr
 parseSignedInt = label "signed int" . lexeme $ do
   void (symbol "-")
-  TUnaryOp (mkImmNativeType I64) Ast.Neg . TConst (mkImmNativeType I64) . NativeInt <$> L.decimal
+  UnaryOp (mkImmNativeType I64) Ast.Neg . Const (mkImmNativeType I64) . NativeInt <$> L.decimal
 
-parseNegation :: Parser TypedExpr
+parseNegation :: Parser Expr
 parseNegation = label "signed int" . lexeme $ do
   void (symbol "-")
-  TUnaryOp TyToInfer Ast.Neg <$> parseExpr
+  UnaryOp TyToInfer Ast.Neg <$> parseExpr
 
 parseId :: Parser Text
 parseId = label "identifier" . lexeme $ do
@@ -136,8 +135,8 @@ parseTypeId typeInfo = label "type identifier" . failsIfError . lexeme $ fmap (T
         (Right ty) -> return ty
         (Left err) -> fail (unpack err)
 
-parseVar :: Parser TypedExpr
-parseVar = label "var" . lexeme $ fmap (TVar TyToInfer) parseId
+parseVar :: Parser Expr
+parseVar = label "var" . lexeme $ fmap (Var TyToInfer) parseId
 
 -- Experiments
 

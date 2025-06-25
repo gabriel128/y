@@ -1,9 +1,10 @@
--- {-# DEPRECATED the non typed atomizer has been deprecated #-}
 
--- Atomizer
+-- TypedAtomizer
 --
 -- removes complex expressions in statments
 -- and transforms them in atomic variables
+--
+-- Works on a Program directly
 --
 -- e.g.
 -- let x = (1 + (2 + (3 + 4)))
@@ -22,6 +23,8 @@ import Data.Foldable
 import Data.Text (Text)
 import EffUtils (StateErrorEff, StateErrorEffM, StateErrorRndEff, StateErrorRndEffM)
 import Utils
+import Types.Defs (Type)
+import qualified Ast.Ast as Ast
 
 -- Extracts the Context and Program from the effects
 runRemComplexStmts :: Context -> Program -> Either Text (Context, Program)
@@ -48,37 +51,38 @@ addBindsToContext :: [Stmt] -> StateErrorEff Context Text ()
 addBindsToContext = mapM_ mapper
   where
     mapper :: Stmt -> StateErrorEff Context Text ()
-    mapper (Let binding _) = modify @Context (Context.addLocal binding)
+    mapper (Let _ binding _) = modify @Context (Context.addLocal binding)
     mapper _ = pure ()
 
 --  Transform a complex statment (i.e. statements that are not atomic) into sequential let bindings
 removeComplexStmt :: Stmt -> StateErrorRndEff Context Text [Stmt]
 removeComplexStmt stmt =
   case stmt of
-    stmt'@(Return expr) | isAtomic expr -> pure [stmt']
-    stmt'@(Print expr) | isAtomic expr -> pure [stmt']
-    stmt'@(Let _ expr) | isAtomic expr -> pure [stmt']
-    Return expr -> do
+    stmt'@(Return _ expr) | isAtomic expr -> pure [stmt']
+    stmt'@(Print _ expr) | isAtomic expr -> pure [stmt']
+    stmt'@(Let _ _ expr) | isAtomic expr -> pure [stmt']
+    Return ty expr -> do
       (letStmts, lastExpr) <- letsFromComplexExp expr
       varName <- Utils.freshVarName fresh
-      pure (letStmts ++ [Let varName lastExpr, Return (Var varName)])
-    Print expr -> do
+      pure (letStmts ++ [Let ty varName lastExpr, Return ty (Var ty varName)])
+    Print ty expr -> do
       (letStmts, lastExpr) <- letsFromComplexExp expr
       varName <- Utils.freshVarName fresh
-      pure (letStmts ++ [Let varName lastExpr, Print (Var varName)])
-    Let binding expr -> do
+      let exprType = Ast.typeFromExpr expr
+      pure (letStmts ++ [Let exprType varName lastExpr, Print ty (Var exprType varName)])
+    Let ty binding expr -> do
       (stmts, lastExpr) <- letsFromComplexExp expr
-      pure (stmts ++ [Let binding lastExpr])
+      pure (stmts ++ [Let ty binding lastExpr])
 
 -- Creates let statements from complex expressions
 letsFromComplexExp :: Expr -> StateErrorRndEff Context Text ([Stmt], Expr)
 letsFromComplexExp expr' =
   case expr' of
     expr | isReduced expr -> pure ([], expr)
-    UnaryOp op expr -> createLetBinding expr (UnaryOp op)
-    BinOp op exprL exprR | isAtomic exprL -> createLetBinding exprR (BinOp op exprL)
-    BinOp op exprL exprR | isAtomic exprR -> createLetBinding exprL $ flip (BinOp op) exprR
-    BinOp op exprL exprR -> createDoubleLetBinding exprL exprR (BinOp op)
+    UnaryOp ty op expr -> createLetBinding expr (UnaryOp ty op)
+    BinOp ty op exprL exprR | isAtomic exprL -> createLetBinding exprR (BinOp ty op exprL)
+    BinOp ty op exprL exprR | isAtomic exprR -> createLetBinding exprL $ flip (BinOp ty op) exprR
+    BinOp ty op exprL exprR -> createDoubleLetBinding exprL exprR (BinOp ty op)
     expr -> pure ([], expr)
 
 -- | Creates a single let statement, it will have the shape of tmp_x
@@ -87,7 +91,8 @@ createLetBinding :: Expr -> (Expr -> Expr) -> StateErrorRndEff Context Text ([St
 createLetBinding expr expConstr = do
   varName <- Utils.freshVarName fresh
   (stmts, expr') <- letsFromComplexExp expr
-  pure (stmts ++ [Let varName expr'], expConstr (Var varName))
+  let exprType = Ast.typeFromExpr expr
+  pure (stmts ++ [Let exprType varName expr'], expConstr (Var exprType varName))
 
 -- | Utility function to create two let bindings at one from one
 createDoubleLetBinding :: Expr -> Expr -> (Expr -> Expr -> Expr) -> StateErrorRndEff Context Text ([Stmt], Expr)
@@ -96,16 +101,17 @@ createDoubleLetBinding exprL exprR expConstr = do
   varNameR <- Utils.freshVarName fresh
   (stmtsL, exprL') <- letsFromComplexExp exprL
   (stmtsR, exprR') <- letsFromComplexExp exprR
-  pure (stmtsL ++ [Let varNameL exprL'] ++ stmtsR ++ [Let varNameR exprR'], expConstr (Var varNameL) (Var varNameR))
+  let exprType = Ast.typeFromExpr exprL
+  pure (stmtsL ++ [Let exprType varNameL exprL'] ++ stmtsR ++ [Let exprType varNameR exprR'], expConstr (Var exprType varNameL) (Var exprType varNameR))
 
 -- If it's reduced it means that it can't be reduced further
 isReduced :: Expr -> Bool
 isReduced expr | isAtomic expr = True
-isReduced (BinOp _ expr1 expr2) = isAtomic expr1 && isAtomic expr2
-isReduced (UnaryOp _ expr) = isAtomic expr
+isReduced (BinOp _ _ expr1 expr2) = isAtomic expr1 && isAtomic expr2
+isReduced (UnaryOp _ _ expr) = isAtomic expr
 isReduced _ = False
 
 isAtomic :: Expr -> Bool
-isAtomic (Const _) = True
-isAtomic (Var _) = True
+isAtomic (Const _ _) = True
+isAtomic (Var _ _) = True
 isAtomic _ = False

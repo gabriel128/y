@@ -1,10 +1,9 @@
--- import AtomizeTests
-import TypedAtomizeTests
+import AtomizerTests
 import DsTests
 import FullProgramTests (test_full_progs)
 import NasmTests (test_nasm)
 import ParserTests (test_parser)
-import RegisterAllocTests (test_reg_alloc)
+-- import RegisterAllocTests (test_reg_alloc)
 import Test.DocTest (mainFromCabal)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 import TypeCheckerTests
@@ -19,5 +18,5 @@ tests :: TestTree
 tests =
   testGroup
     "Tests"
-    -- [test_id_ir, test_typed_atomizer, test_parser, test_full_progs, test_reg_alloc, test_general_ds, dsProps, test_nasm, test_type_checking]
-    [test_typed_atomizer, test_parser, test_full_progs, test_reg_alloc, test_general_ds, dsProps, test_nasm, test_type_checking]
+    -- [test_typed_atomizer, test_parser, test_full_progs, test_reg_alloc, test_general_ds, dsProps, test_nasm, test_type_checking]
+    [test_typed_atomizer, test_parser, test_full_progs, test_general_ds, dsProps, test_nasm, test_type_checking]

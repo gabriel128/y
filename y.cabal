@@ -28,7 +28,6 @@ library
   exposed-modules:
       Ast.Ast
       Ast.Examples
-      Ast.TypedAst
       Context
       EffUtils
       Experiments
@@ -43,10 +42,8 @@ library
       Parser.Defs
       Parser.Parser
       Passes.Atomizer
-      Passes.TypedAtomizer
       Passes.Error
       Passes.StmtsToX86
-      Passes.TypedStmtsToX86
       Passes.TypeChecker
       Passes.X86ToTextProg
       Types.Defs
@@ -134,8 +131,7 @@ test-suite y-test
   type: exitcode-stdio-1.0
   main-is: TestLoader.hs
   other-modules:
-      AtomizeTests
-      TypedAtomizeTests
+      AtomizerTests
       DsTests
       FullProgramTests
       InterpreterTests
