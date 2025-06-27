@@ -112,6 +112,4 @@ isReduced (UnaryOp _ _ expr) = isAtomic expr
 isReduced _ = False
 
 isAtomic :: Expr -> Bool
-isAtomic (Const _ _) = True
-isAtomic (Var _ _) = True
-isAtomic _ = False
+isAtomic = isAtomicExpr

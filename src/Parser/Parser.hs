@@ -5,7 +5,7 @@ module Parser.Parser where
 import Ast.Ast
 import qualified Ast.Ast as Ast
 import Control.Monad
-import Control.Monad.Combinators.Expr (Operator (InfixL), makeExprParser)
+import Control.Monad.Combinators.Expr (Operator (InfixL, Prefix), makeExprParser)
 import Data.Text (Text, pack, unpack)
 import Parser.Defs
 import Text.Megaparsec
@@ -13,6 +13,7 @@ import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 import Types.Defs
 import qualified Types.Parsing
+import qualified Ast.Ast as Ast.BinOp
 
 runProgramParser :: Text -> Either Text Program
 runProgramParser input =
@@ -88,20 +89,47 @@ parseTerm = choice [parens parseExpr, try parseSignedInt <|> parseNegation, pars
 parseExpr :: Parser Expr
 parseExpr = makeExprParser parseTerm opTable
 
+-- The outer list is ordered in descending precedence, so the higher we place a group of operators in it, the tighter they bind
+-- Roughly based on this https://en.cppreference.com/w/c/language/operator_precedence.html
 opTable :: [[Operator Parser Expr]]
 opTable =
-  [ [ binary "*" (BinOp TyToInfer Ast.Mul),
+  [
+    [ prefix "!" (UnaryOp (mkImmNativeType TyBool) Ast.Not)],
+    [ binary "*" (BinOp TyToInfer Ast.Mul),
       binary "/" (BinOp TyToInfer Ast.Div)
     ],
     [ binary "+" (BinOp TyToInfer Ast.Add),
       binary "-" (BinOp TyToInfer Ast.Sub)
     ],
-    [ binary "<<" (BinOp TyToInfer Ast.ShiftL)
+    [
+      binary "<<" (BinOp TyToInfer Ast.ShiftL)
+      -- binary ">>" (BinOp TyToInfer Ast.ShiftR)
+    ],
+    [
+      binary "<=" (BinOp (mkImmNativeType TyBool) Ast.Le),
+      binaryFlipped ">=" (BinOp (mkImmNativeType TyBool) Ast.Le),
+      binary "<" (BinOp (mkImmNativeType TyBool) Ast.Lt),
+      binaryFlipped ">" (BinOp (mkImmNativeType TyBool) Ast.Lt)
+    ],
+    -- [ binary "&&" (BinOp TyToInfer Ast.BinOp.BitAnd) ],
+    -- [ binary "||" (BinOp TyToInfer Ast.BinOp.BitOr) ],
+    -- [ binary "^" (BinOp TyToInfer Ast.BinOp.BitXor) ],
+    -- [ binary "&&" (BinOp TyToInfer Ast.BinOp.And) ],
+    -- [ binary "||" (BinOp TyToInfer Ast.BinOp.Or) ],
+    [
+      binary "==" (BinOp (mkImmNativeType TyBool) Ast.Eq)
+      -- binary "!=" (BinOp (mkImmNativeType TyBool) Ast.BinOp.NEQ),
     ]
   ]
 
+prefix :: Text -> (Expr -> Expr) -> Operator Parser Expr
+prefix  name f = Prefix  (f <$ symbol name)
+
 binary :: Text -> (Expr -> Expr -> Expr) -> Operator Parser Expr
 binary name f = InfixL (f <$ symbol name)
+
+binaryFlipped :: Text -> (Expr -> Expr -> Expr) -> Operator Parser Expr
+binaryFlipped name f = InfixL (flip f <$ symbol name)
 
 parseUint :: Parser Expr
 parseUint = Const (mkImmNativeType U64) . NativeInt <$> lexeme (L.decimal <?> "integer")
@@ -109,6 +137,7 @@ parseUint = Const (mkImmNativeType U64) . NativeInt <$> lexeme (L.decimal <?> "i
 -- parseBool :: Parser Ast.Expr
 -- parseBool = Ast.Const TyBool $ NativeBool <$> lexeme (L.decimal <?> "integer")
 
+-- TODO: Make this a prefix op
 parseSignedInt :: Parser Expr
 parseSignedInt = label "signed int" . lexeme $ do
   void (symbol "-")

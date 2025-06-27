@@ -32,7 +32,7 @@ typeCheck typedProgram = do
       (typeMap', typedStmts) <- acc
       case typeCheckStmt stmt typeMap' of
         Right (x, tstmt) -> Right (x, tstmt : typedStmts)
-        Left err -> Left $ T.pack $ "Type check failed for " <> show stmt <> "on line {x}: " <> show err
+        Left err -> Left $ T.pack $ "Type check failed for " <> show stmt <> ": " <> show err
 
 typeCheckStmt :: Stmt -> VarToTypeMappings -> Either Text (VarToTypeMappings, Stmt)
 typeCheckStmt tstmt typeMap =
@@ -51,12 +51,11 @@ typeCheckStmt tstmt typeMap =
       Right (newMap, Let ty label typedExpr)
     (Let letType label expr) -> do
       typedExpr <- getExpr expr typeMap
-      let ty = typeFromExpr typedExpr
-      if sameTypeIgnoreMut letType ty
-        then do
-          let newMap = M.insert label letType typeMap
-          Right (newMap, Let letType label typedExpr)
-        else Left $ T.pack ("type check failed for var definition on line x: " <> show letType <> " doesn't match with " <> show typedExpr <> ". Duh!")
+      let castedExpr = castExprIfNativeInt typedExpr letType
+      let ty = typeFromExpr castedExpr
+      _ <- sameTyIgnoreMutWithErr letType ty (show letType <> " doesn't match with " <> show ty <> ". Duh!")
+      let newMap = M.insert label letType typeMap
+      Right (newMap, Let letType label castedExpr)
 
 -- TODO add linenumbers
 getExpr :: Expr -> VarToTypeMappings -> Either Text Expr
@@ -74,11 +73,13 @@ getExpr texpr typeMap =
         ty@(TyNative _ a) | a `elem` [I64, U64] -> Right (UnaryOp ty Ast.Neg typedExpr)
         _otherwise -> Left $ T.pack ("Negation only take numeric types, found: " <> show typedExpr)
     tunary@(UnaryOp {}) -> Right tunary
-    BinOp TyToInfer op leftExpr rightExpr -> do
+    binop@(BinOp TyToInfer op leftExpr rightExpr) -> do
       leftExpr <- getExpr leftExpr typeMap
       rightExpr <- getExpr rightExpr typeMap
       let leftType = typeFromExpr leftExpr
       let rightType = typeFromExpr rightExpr
+      _ <- sameTyIgnoreMutWithErr leftType rightType
+        ("(" <> show leftType <> ") doesn't match with (" <> show rightType <> ") specifically the expression: " <> show binop <> ". Duh!")
       _ <- typeCheckBinOp op leftType
       _ <- typeCheckBinOp op rightType
       _ <- checkDiv0 op rightExpr
@@ -88,15 +89,20 @@ getExpr texpr typeMap =
       _ <- checkDiv0 op rightExpr
       Right tbinop
 
--- ensureInferred :: Expr -> Either Text ()
--- ensureInferred typedExpr =
---   case typeFromTExpr typedExpr of
---     TyToInfer -> Left $ T.pack ("Couldn't infer: " <> show typedExpr <> " my bad!")
---     _ -> Right ()
+
+-- | Cast native expressions usueful for cases like `let x : u64 = 8;`, 8 will be u64
+castExprIfNativeInt :: Expr -> Type -> Expr
+castExprIfNativeInt const@(Const (TyNative tmeta nType) x) (TyNative _ nType')
+  | nType == nType'  = const
+  | nType `elem` [I64, U64] && nType' `elem` [I64, U64] = Const (TyNative tmeta nType') x
+castExprIfNativeInt expr _ = expr
+
+
 
 typeCheckBinOp :: BinOp -> Type -> Either Text ()
 typeCheckBinOp binop (TyNative _ nativeTy)
   | binop `elem` [Ast.Add, Ast.Sub, Ast.Mul, Ast.Div, Ast.ShiftL] && nativeTy `elem` [I64, U64] = Right ()
+  | binop `elem` [Ast.Le, Ast.Eq, Ast.Lt] && nativeTy == TyBool = Right ()
 typeCheckBinOp binop ty = Left $ T.pack $ "type " <> show ty <> " can't be handled by " <> show binop
 
 -- | Infers binop final type.
@@ -114,4 +120,13 @@ checkDiv0 :: BinOp -> Expr -> Either Text ()
 checkDiv0 Ast.Div (Const _ (Ast.NativeInt 0)) = Left $ T.pack "Can not divide by zero you idiot"
 checkDiv0 _ _ = Right ()
 
--- \| binop `elem` [Ast.Add, Ast.Sub, Ast.Mul, Ast.Div, Ast.ShiftL] && nativeTy `elem` [I64, U64] = Right ()
+
+-- ensureInferred :: Expr -> Either Text ()
+-- ensureInferred typedExpr =
+--   case typeFromTExpr typedExpr of
+--     TyToInfer -> Left $ T.pack ("Couldn't infer: " <> show typedExpr <> " my bad!")
+--     _ -> Right ()
+
+sameTyIgnoreMutWithErr :: Type -> Type -> String -> Either Text ()
+sameTyIgnoreMutWithErr tx ty err | sameTypeIgnoreMut tx ty = Right ()
+sameTyIgnoreMutWithErr tx ty err = Left $ T.pack err

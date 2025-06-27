@@ -9,6 +9,8 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, testCase, (@?=))
 import Text.Megaparsec
 import Types.Defs
+import qualified Ast.Ast as Ast
+import qualified Ast.Ast as BinOp
 
 -- import Test.Tasty.SmallCheck as SC
 
@@ -68,7 +70,51 @@ unitTests =
               (BinOp TyToInfer Add (Const (mkImmNativeType U64) (NativeInt 1)) (Const (mkImmNativeType U64) (NativeInt 3)))
               (Const (mkImmNativeType U64) (NativeInt 2))
           ),
-    --
+    testCase "parses less than exprs" $
+      parse (parseExpr <* eof) "" "1 < 2"
+        @?= Right
+          (Ast.BinOp
+             (mkImmNativeType TyBool)
+             BinOp.Lt
+              (Const (mkImmNativeType U64) (NativeInt 1))
+              (Const (mkImmNativeType U64) (NativeInt 2))
+          ),
+    testCase "parses grater than exprs" $
+      parse (parseExpr <* eof) "" "1 > 2"
+        @?= Right
+          (Ast.BinOp
+             (mkImmNativeType TyBool)
+             BinOp.Lt
+              (Const (mkImmNativeType U64) (NativeInt 2))
+              (Const (mkImmNativeType U64) (NativeInt 1))
+          ),
+    testCase "parses less than equal exprs" $
+      parse (parseExpr <* eof) "" "1 <= 2"
+        @?= Right
+          (Ast.BinOp
+             (mkImmNativeType TyBool)
+             BinOp.Le
+              (Const (mkImmNativeType U64) (NativeInt 1))
+              (Const (mkImmNativeType U64) (NativeInt 2))
+          ),
+    testCase "parses grater than equal exprs" $
+      parse (parseExpr <* eof) "" "1 >= 2"
+        @?= Right
+          (Ast.BinOp
+             (mkImmNativeType TyBool)
+             BinOp.Le
+              (Const (mkImmNativeType U64) (NativeInt 2))
+              (Const (mkImmNativeType U64) (NativeInt 1))
+          ),
+    testCase "parses equal exprs" $
+      parse (parseExpr <* eof) "" "1 == 2"
+        @?= Right
+          (Ast.BinOp
+             (mkImmNativeType TyBool)
+             BinOp.Eq
+              (Const (mkImmNativeType U64) (NativeInt 1))
+              (Const (mkImmNativeType U64) (NativeInt 2))
+          ),
     testCase "parses mult-sums stmts" $
       parse (parseExpr <* eof) "" "1 * 3 + 2"
         @?= Right

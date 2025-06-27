@@ -39,6 +39,11 @@ unitTests =
       _prog <- liftEither $ runTypeCheck <$> runProgramParser "x = 8;"
       assertBool "" True,
     -- --
+    testCase "Type checks same type lhs rhs on binops sides" $ do
+      progErr <- liftEither $ runTypeCheck <$> runProgramParser "x : u64 = 8; y : i64 = 0; z = x + y;"
+      -- putStrLn (show progErr)
+      assertBool "" (isLeft progErr),
+    -- --
     testCase "Type checks division by 0" $ do
       prog <- liftEither $ runTypeCheck <$> runProgramParser "x = 8 / 0;"
       assertBool "" (isLeft prog)
