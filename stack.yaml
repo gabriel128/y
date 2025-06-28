@@ -1,5 +1,6 @@
 ghc-options:
   yc: -Wall
+  y-test: -Wall
 packages:
 - .
 resolver: lts-23.25

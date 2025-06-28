@@ -20,17 +20,17 @@ interpExpr :: Env -> Expr -> Either T.Text NativeVal
 interpExpr _ (Const _ n) = Right n
 -- interpExpr env (ExprCall (Func {funcId = "read_input"})) = Right 42
 interpExpr env (UnaryOp _ Neg expr) =
-  let val = interpExpr env expr
-   in case val of
-        Right (NativeInt x) -> Right (NativeInt (negate x))
-        _otherwise -> Left (T.pack ("Can't negate non int val" <> show val))
-interpExpr env (BinOp _ Add left right) = fmap NativeInt $ (+) <$> intFromNativeVal (interpExpr env left) <*> intFromNativeVal (interpExpr env right)
-interpExpr env (BinOp _ Sub left right) = fmap NativeInt $ (-) <$> intFromNativeVal (interpExpr env left) <*> intFromNativeVal (interpExpr env right)
+    let val = interpExpr env expr
+     in case val of
+            Right (MkNativeInt x) -> Right (MkNativeInt (negate x))
+            _otherwise -> Left (T.pack ("Can't negate non int val" <> show val))
+interpExpr env (BinOp _ Add left right) = fmap MkNativeInt $ (+) <$> intFromNativeVal (interpExpr env left) <*> intFromNativeVal (interpExpr env right)
+interpExpr env (BinOp _ Sub left right) = fmap MkNativeInt $ (-) <$> intFromNativeVal (interpExpr env left) <*> intFromNativeVal (interpExpr env right)
 interpExpr env (Var _ binding) = maybeToRight ("Can't find variable " <> binding) (M.lookup binding env)
 interpExpr _ expr = Left (T.pack ("Error interpreting expression: " <> show expr))
 
 intFromNativeVal :: Either T.Text NativeVal -> Either T.Text Int
-intFromNativeVal (Right (NativeInt x)) = Right x
+intFromNativeVal (Right (MkNativeInt x)) = Right x
 intFromNativeVal x = Left $ T.pack $ "Can'get int from" <> show x
 
 emptyStmtResult :: StmtResult
@@ -38,12 +38,12 @@ emptyStmtResult = StmtResult empty Nothing
 
 interpStmt :: Env -> Stmt -> Either T.Text StmtResult
 interpStmt env (Let _ binding expr) = do
-  exprRes <- interpExpr env expr
-  let env' = M.insert binding exprRes env
-  pure (StmtResult env' Nothing)
+    exprRes <- interpExpr env expr
+    let env' = M.insert binding exprRes env
+    pure (StmtResult env' Nothing)
 interpStmt env (Return _ expr) = do
-  exprRes <- interpExpr env expr
-  pure (StmtResult env (Just exprRes))
+    exprRes <- interpExpr env expr
+    pure (StmtResult env (Just exprRes))
 interpStmt _ _ = Left "wrong statement"
 
 interpStmts :: [Stmt] -> Either T.Text StmtResult
