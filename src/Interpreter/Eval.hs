@@ -8,50 +8,53 @@ import Data.Maybe
 import qualified Data.Text as T
 import Prelude as P
 
-type Env = M.Map T.Text NativeVal
+type Env = M.Map T.Text T.Text
 
-data StmtResult = StmtResult {getEnv :: Env, getResult :: Maybe NativeVal} deriving (Show, Eq)
+-- data StmtResult = StmtResult {getEnv :: Env, getResult :: Maybe NativeVal} deriving (Show, Eq)
 
-createEnv :: Env
-createEnv = empty
+-- createEnv :: Env
+-- createEnv = empty
 
+--- TODO: WIP, this might become the operaational semantics at some point
 --- Interpreter
-interpExpr :: Env -> Expr -> Either T.Text NativeVal
-interpExpr _ (Const _ n) = Right n
--- interpExpr env (ExprCall (Func {funcId = "read_input"})) = Right 42
-interpExpr env (UnaryOp _ Neg expr) =
-    let val = interpExpr env expr
-     in case val of
-            Right (MkNativeInt x) -> Right (MkNativeInt (negate x))
-            _otherwise -> Left (T.pack ("Can't negate non int val" <> show val))
-interpExpr env (BinOp _ Add left right) = fmap MkNativeInt $ (+) <$> intFromNativeVal (interpExpr env left) <*> intFromNativeVal (interpExpr env right)
-interpExpr env (BinOp _ Sub left right) = fmap MkNativeInt $ (-) <$> intFromNativeVal (interpExpr env left) <*> intFromNativeVal (interpExpr env right)
-interpExpr env (Var _ binding) = maybeToRight ("Can't find variable " <> binding) (M.lookup binding env)
-interpExpr _ expr = Left (T.pack ("Error interpreting expression: " <> show expr))
+interpExpr :: Env -> Expr -> Either T.Text T.Text
+interpExpr = undefined
 
-intFromNativeVal :: Either T.Text NativeVal -> Either T.Text Int
-intFromNativeVal (Right (MkNativeInt x)) = Right x
-intFromNativeVal x = Left $ T.pack $ "Can'get int from" <> show x
+-- interpExpr _ (Const _ n) = Right n
+-- -- interpExpr env (ExprCall (Func {funcId = "read_input"})) = Right 42
+-- interpExpr env (UnaryOp _ Neg expr) =
+--     let val = interpExpr env expr
+--      in case val of
+--             Right x -> Right (negate x)
+--             _otherwise -> Left (T.pack ("Can't negate non int val" <> show val))
+-- interpExpr env (BinOp _ Add left right) = fmap MkNativeInt $ (+) <$> intFromNativeVal (interpExpr env left) <*> intFromNativeVal (interpExpr env right)
+-- interpExpr env (BinOp _ Sub left right) = fmap MkNativeInt $ (-) <$> intFromNativeVal (interpExpr env left) <*> intFromNativeVal (interpExpr env right)
+-- interpExpr env (Var _ binding) = maybeToRight ("Can't find variable " <> binding) (M.lookup binding env)
+-- interpExpr _ expr = Left (T.pack ("Error interpreting expression: " <> show expr))
 
-emptyStmtResult :: StmtResult
-emptyStmtResult = StmtResult empty Nothing
+-- intFromNativeVal :: Either T.Text NativeVal -> Either T.Text Int
+-- intFromNativeVal (Right (MkNativeInt x)) = Right x
+-- intFromNativeVal x = Left $ T.pack $ "Can'get int from" <> show x
 
-interpStmt :: Env -> Stmt -> Either T.Text StmtResult
-interpStmt env (Let _ binding expr) = do
-    exprRes <- interpExpr env expr
-    let env' = M.insert binding exprRes env
-    pure (StmtResult env' Nothing)
-interpStmt env (Return _ expr) = do
-    exprRes <- interpExpr env expr
-    pure (StmtResult env (Just exprRes))
-interpStmt _ _ = Left "wrong statement"
+-- emptyStmtResult :: StmtResult
+-- emptyStmtResult = StmtResult empty Nothing
 
-interpStmts :: [Stmt] -> Either T.Text StmtResult
-interpStmts = foldM go emptyStmtResult
-  where
-    go :: StmtResult -> Stmt -> Either T.Text StmtResult
-    go (StmtResult env Nothing) stmt = interpStmt env stmt
-    go res _ = Right res
+-- interpStmt :: Env -> Stmt -> Either T.Text StmtResult
+-- interpStmt env (Let _ binding expr) = do
+--     exprRes <- interpExpr env expr
+--     let env' = M.insert binding exprRes env
+--     pure (StmtResult env' Nothing)
+-- interpStmt env (Return _ expr) = do
+--     exprRes <- interpExpr env expr
+--     pure (StmtResult env (Just exprRes))
+-- interpStmt _ _ = Left "wrong statement"
 
-interpProg :: Program -> T.Text
-interpProg (Program stmts) = either id (maybe "Empty" (T.pack . show) . getResult) (interpStmts stmts)
+-- interpStmts :: [Stmt] -> Either T.Text StmtResult
+-- interpStmts = foldM go emptyStmtResult
+--   where
+--     go :: StmtResult -> Stmt -> Either T.Text StmtResult
+--     go (StmtResult env Nothing) stmt = interpStmt env stmt
+--     go res _ = Right res
+
+-- interpProg :: Program -> T.Text
+-- interpProg (Program stmts) = either id (maybe "Empty" (T.pack . show) . getResult) (interpStmts stmts)

@@ -3,20 +3,22 @@
 
 module Types.Defs where
 
+import Utils (PrettyPrint (..))
+
 data NativeType = I64 | U64 | TyBool | Unit
-    deriving (Eq)
+    deriving (Show, Eq)
 
 data Type where
     MkNativeType :: NativeType -> Type
     TyToInfer :: Type
-    deriving (Eq)
+    deriving (Show, Eq)
 
-instance Show NativeType where
-    show I64 = "i64"
-    show U64 = "u64"
-    show TyBool = "bool"
-    show Unit = "Unit"
+instance PrettyPrint NativeType where
+    prettyPrint I64 = "i64"
+    prettyPrint U64 = "u64"
+    prettyPrint TyBool = "bool"
+    prettyPrint Unit = "Unit"
 
-instance Show Type where
-    show (MkNativeType typeval) = show typeval
-    show TyToInfer = "not-inferred"
+instance PrettyPrint Type where
+    prettyPrint (MkNativeType typeval) = prettyPrint typeval
+    prettyPrint TyToInfer = "not-inferred"

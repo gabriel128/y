@@ -118,7 +118,7 @@ inferBinOp binop lty rty = Left $ T.pack $ "Can not infer " <> show lty <> " " <
 
 -- | Division by zero is type checked if we know that the rhs is zero at typechecking type
 checkDiv0 :: BinOp -> Expr -> Either Text ()
-checkDiv0 Ast.Div (Const _ (MkNativeInt 0)) = Left $ T.pack "Can not divide by zero you idiot"
+checkDiv0 Ast.Div (Const _ "0") = Left $ T.pack "Can not divide by zero you idiot"
 checkDiv0 _ _ = Right ()
 
 -- ensureInferred :: Expr -> Either Text ()

@@ -80,7 +80,7 @@ unitTests =
         let [_var, _var', "x"] = Set.toAscList locals
         assertEqual "" expectedProg prog'
     , -- -- --
-      testCase "pepe remove complex ops on Binary ops" $ do
+      testCase "remove complex ops on Binary ops" $ do
         prog <- liftEither $ getTypeCheckedProg "x : i64 = 10 + -8;"
         expectedProg <- liftEither $ getTypeCheckedProg "tmp_0 : i64 = -8; x : i64 = 10 + tmp_0;"
         let (Context locals 0, prog') = runComplexStmts (progStmts prog)

@@ -3,8 +3,11 @@
 
 module Ast.Ast where
 
+import Data.Text
 import qualified Data.Text as T
 import Types.Defs
+import Utils
+import Utils (PrettyPrint (prettyPrint))
 
 data FuncLocalInfo = FuncLocalInfo
     deriving (Eq, Show)
@@ -15,7 +18,7 @@ data Func = Func {funcId :: T.Text, funcArgs :: [Expr], funcLocalInfo :: FuncLoc
 data UnaryOp
     = Neg
     | Not
-    deriving (Eq)
+    deriving (Eq, Show)
 
 data BinOp
     = Add
@@ -27,58 +30,58 @@ data BinOp
     | Le
     | -- | ShiftR
       ShiftL
-    deriving (Eq)
+    deriving (Eq, Show)
 
 type Label = T.Text
 
-data NativeVal = MkNativeInt Int | MkNativeBool Bool
-    deriving (Eq, Show)
-
 data Expr where
-    Const :: NativeType -> NativeVal -> Expr
+    Const :: NativeType -> Text -> Expr
     UnaryOp :: Type -> UnaryOp -> Expr -> Expr
     BinOp :: Type -> BinOp -> Expr -> Expr -> Expr
     Var :: Type -> Label -> Expr
-    deriving (Eq)
+    deriving (Eq, Show)
 
 data Stmt where
     Let :: Type -> Label -> Expr -> Stmt
     Print :: Type -> Expr -> Stmt
     Return :: Type -> Expr -> Stmt
-    deriving (Eq)
+    deriving (Eq, Show)
 
 -- A program is a sequence of statements
 newtype Program = Program {progStmts :: [Stmt]}
     deriving (Show, Eq)
 
-instance Show UnaryOp where
-    show Neg = "-"
-    show Not = "!"
+instance PrettyPrint Label where
+    prettyPrint = tshow
 
-instance Show BinOp where
-    show Add = " + "
-    show Sub = " - "
-    show Mul = " + "
-    show Div = " \\ "
-    show Eq = " == "
-    show Lt = " < "
-    show Le = " <= "
-    show ShiftL = " << "
+instance PrettyPrint UnaryOp where
+    prettyPrint Neg = "-"
+    prettyPrint Not = "!"
 
-instance Show Expr where
-    show (Const _ val) = show val
-    show (UnaryOp _ op expr) | isAtomicExpr expr = show op <> show expr
-    show (UnaryOp _ op expr) = show op <> "(" <> show expr <> ")"
-    show (BinOp _ op lh rh) | isAtomicExpr lh && isAtomicExpr rh = show lh <> show op <> show rh
-    show (BinOp _ op lh rh) | isAtomicExpr lh = show lh <> show op <> "(" <> show rh <> ")"
-    show (BinOp _ op lh rh) | isAtomicExpr rh = "(" <> show lh <> ")" <> show op <> show rh
-    show (BinOp _ op lh rh) = "(" <> show lh <> ")" <> show op <> "(" <> show rh <> ")"
-    show (Var _ label) = show label
+instance PrettyPrint BinOp where
+    prettyPrint Add = " + "
+    prettyPrint Sub = " - "
+    prettyPrint Mul = " + "
+    prettyPrint Div = " \\ "
+    prettyPrint Eq = " == "
+    prettyPrint Lt = " < "
+    prettyPrint Le = " <= "
+    prettyPrint ShiftL = " << "
 
-instance Show Stmt where
-    show (Let ty label expr) = "let " <> show label <> " : " <> show ty <> " = " <> show expr
-    show (Print _ expr) = "print(" <> show expr <> ")"
-    show (Return _ expr) = "return " <> show expr
+instance PrettyPrint Expr where
+    prettyPrint (Const _ val) = prettyPrint val
+    prettyPrint (UnaryOp _ op expr) | isAtomicExpr expr = prettyPrint op <> prettyPrint expr
+    prettyPrint (UnaryOp _ op expr) = prettyPrint op <> "(" <> prettyPrint expr <> ")"
+    prettyPrint (BinOp _ op lh rh) | isAtomicExpr lh && isAtomicExpr rh = prettyPrint lh <> prettyPrint op <> prettyPrint rh
+    prettyPrint (BinOp _ op lh rh) | isAtomicExpr lh = prettyPrint lh <> prettyPrint op <> "(" <> prettyPrint rh <> ")"
+    prettyPrint (BinOp _ op lh rh) | isAtomicExpr rh = "(" <> prettyPrint lh <> ")" <> prettyPrint op <> prettyPrint rh
+    prettyPrint (BinOp _ op lh rh) = "(" <> prettyPrint lh <> ")" <> prettyPrint op <> "(" <> prettyPrint rh <> ")"
+    prettyPrint (Var _ label) = prettyPrint label
+
+instance PrettyPrint Stmt where
+    prettyPrint (Let ty label expr) = "let " <> prettyPrint label <> " : " <> prettyPrint ty <> " = " <> prettyPrint expr
+    prettyPrint (Print _ expr) = "print(" <> prettyPrint expr <> ")"
+    prettyPrint (Return _ expr) = "return " <> prettyPrint expr
 
 newProgram :: [Stmt] -> Program
 newProgram = Program

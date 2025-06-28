@@ -8,6 +8,7 @@ import qualified Ast.Ast as Ast.BinOp
 import Control.Monad
 import Control.Monad.Combinators.Expr (Operator (InfixL, Prefix), makeExprParser)
 import Data.Text (Text, pack, unpack)
+import qualified Data.Text as T
 import Parser.Defs
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -15,6 +16,7 @@ import qualified Text.Megaparsec.Char.Lexer as L
 import Types.Defs
 import Types.Parsing (parseTypeId)
 import qualified Types.Parsing
+import Utils (tshow)
 
 runProgramParser :: Text -> Either Text Program
 runProgramParser input =
@@ -126,10 +128,10 @@ binaryFlipped :: Text -> (Expr -> Expr -> Expr) -> Operator Parser Expr
 binaryFlipped name f = InfixL (flip f <$ symbol name)
 
 parseUint :: Parser Expr
-parseUint = Const U64 . MkNativeInt <$> lexeme (L.decimal <?> "integer")
+parseUint = Const U64 . tshow <$> lexeme (L.decimal <?> "integer")
 
 parseInt :: Parser Expr
-parseInt = Const I64 . MkNativeInt <$> lexeme (L.decimal <?> "integer")
+parseInt = Const I64 . tshow <$> lexeme (L.decimal <?> "integer")
 
 -- parseBool :: Parser Ast.Expr
 -- parseBool = Ast.Const TyBool $ NativeBool <$> lexeme (L.decimal <?> "integer")
@@ -138,7 +140,7 @@ parseInt = Const I64 . MkNativeInt <$> lexeme (L.decimal <?> "integer")
 parseSignedInt :: Parser Expr
 parseSignedInt = label "signed int" . lexeme $ do
     void (symbol "-")
-    UnaryOp (MkNativeType I64) Ast.Neg . Const I64 . MkNativeInt <$> L.decimal
+    UnaryOp (MkNativeType I64) Ast.Neg . Const I64 . tshow <$> L.decimal
 
 parseNegation :: Parser Expr
 parseNegation = label "signed int" . lexeme $ do
