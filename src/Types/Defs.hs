@@ -21,4 +21,9 @@ instance PrettyPrint NativeType where
 
 instance PrettyPrint Type where
     prettyPrint (MkNativeType typeval) = prettyPrint typeval
-    prettyPrint TyToInfer = "not-inferred"
+    prettyPrint TyToInfer = "ToInfer"
+
+isNumeric :: NativeType -> Bool
+isNumeric I64 = True
+isNumeric U64 = True
+isNumeric _ = False

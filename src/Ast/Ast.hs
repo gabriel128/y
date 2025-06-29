@@ -5,9 +5,9 @@ module Ast.Ast where
 
 import Data.Text
 import qualified Data.Text as T
+import Data.Text.Read (decimal)
 import Types.Defs
 import Utils
-import Utils (PrettyPrint (prettyPrint))
 
 data FuncLocalInfo = FuncLocalInfo
     deriving (Eq, Show)
@@ -50,38 +50,6 @@ data Stmt where
 -- A program is a sequence of statements
 newtype Program = Program {progStmts :: [Stmt]}
     deriving (Show, Eq)
-
-instance PrettyPrint Label where
-    prettyPrint = tshow
-
-instance PrettyPrint UnaryOp where
-    prettyPrint Neg = "-"
-    prettyPrint Not = "!"
-
-instance PrettyPrint BinOp where
-    prettyPrint Add = " + "
-    prettyPrint Sub = " - "
-    prettyPrint Mul = " + "
-    prettyPrint Div = " \\ "
-    prettyPrint Eq = " == "
-    prettyPrint Lt = " < "
-    prettyPrint Le = " <= "
-    prettyPrint ShiftL = " << "
-
-instance PrettyPrint Expr where
-    prettyPrint (Const _ val) = prettyPrint val
-    prettyPrint (UnaryOp _ op expr) | isAtomicExpr expr = prettyPrint op <> prettyPrint expr
-    prettyPrint (UnaryOp _ op expr) = prettyPrint op <> "(" <> prettyPrint expr <> ")"
-    prettyPrint (BinOp _ op lh rh) | isAtomicExpr lh && isAtomicExpr rh = prettyPrint lh <> prettyPrint op <> prettyPrint rh
-    prettyPrint (BinOp _ op lh rh) | isAtomicExpr lh = prettyPrint lh <> prettyPrint op <> "(" <> prettyPrint rh <> ")"
-    prettyPrint (BinOp _ op lh rh) | isAtomicExpr rh = "(" <> prettyPrint lh <> ")" <> prettyPrint op <> prettyPrint rh
-    prettyPrint (BinOp _ op lh rh) = "(" <> prettyPrint lh <> ")" <> prettyPrint op <> "(" <> prettyPrint rh <> ")"
-    prettyPrint (Var _ label) = prettyPrint label
-
-instance PrettyPrint Stmt where
-    prettyPrint (Let ty label expr) = "let " <> prettyPrint label <> " : " <> prettyPrint ty <> " = " <> prettyPrint expr
-    prettyPrint (Print _ expr) = "print(" <> prettyPrint expr <> ")"
-    prettyPrint (Return _ expr) = "return " <> prettyPrint expr
 
 newProgram :: [Stmt] -> Program
 newProgram = Program

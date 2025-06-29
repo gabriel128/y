@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Passes.TypeChecker where
 
 -- \| Type Checker
@@ -7,6 +9,7 @@ module Passes.TypeChecker where
 
 import Ast.Ast
 import qualified Ast.Ast as Ast
+import Ast.PrettyPrinting
 import Context (Context)
 import Control.Carrier.Error.Church (liftEither)
 import Data.Either.Combinators (maybeToRight)
@@ -16,6 +19,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import EffUtils (StateErrorEffM)
 import Types.Defs (NativeType (..), Type (..))
+import Utils (PrettyPrint (prettyPrint))
 
 type VarToTypeMappings = M.Map Text Type
 
@@ -32,7 +36,7 @@ typeCheck typedProgram = do
         (typeMap', typedStmts) <- acc
         case typeCheckStmt stmt typeMap' of
             Right (x, tstmt) -> Right (x, tstmt : typedStmts)
-            Left err -> Left $ T.pack $ "Type check failed for " <> show stmt <> ": " <> show err
+            Left err -> Left $ "Type check failed for => " <> prettyPrint stmt <> "\nErr => " <> err
 
 typeCheckStmt :: Stmt -> VarToTypeMappings -> Either Text (VarToTypeMappings, Stmt)
 typeCheckStmt tstmt typeMap =
@@ -53,7 +57,7 @@ typeCheckStmt tstmt typeMap =
             typedExpr <- getExpr expr typeMap
             let castedExpr = castExprIfNativeInt typedExpr letType
             let ty = typeFromExpr castedExpr
-            _ <- isSameTyWithErr letType ty (show letType <> " doesn't match with " <> show ty <> ". Duh!")
+            _ <- isSameTyWithErr letType ty (prettyPrint letType <> " doesn't match with " <> prettyPrint ty <> ". Duh!")
             let newMap = M.insert label letType typeMap
             Right (newMap, Let letType label castedExpr)
 
@@ -63,7 +67,7 @@ getExpr texpr typeMap =
     case texpr of
         tconst@(Const _ty _val) -> Right tconst
         Var TyToInfer label -> do
-            ty <- maybeToRight (T.pack ("Can't infer type for " <> show label <> ", are you sure you declared it? :|")) $ M.lookup label typeMap
+            ty <- maybeToRight ("Can't infer type for " <> prettyPrint label <> ", are you sure you declared it? :|") $ M.lookup label typeMap
             Right $ Var ty label
         tvar@(Var _ty _) -> do
             Right tvar
@@ -71,7 +75,7 @@ getExpr texpr typeMap =
             typedExpr <- getExpr expr' typeMap
             case typeFromExpr typedExpr of
                 ty@(MkNativeType a) | a `elem` [I64, U64] -> Right (UnaryOp ty Ast.Neg typedExpr)
-                _otherwise -> Left $ T.pack ("Negation only take numeric types, found: " <> show typedExpr)
+                _otherwise -> Left $ "Negation only take numeric types, found: " <> prettyPrint typedExpr
         tunary@(UnaryOp{}) -> Right tunary
         binop@(BinOp TyToInfer op leftExpr rightExpr) -> do
             leftExpr <- getExpr leftExpr typeMap
@@ -82,7 +86,16 @@ getExpr texpr typeMap =
                 isSameTyWithErr
                     leftType
                     rightType
-                    ("(" <> show leftType <> ") doesn't match with (" <> show rightType <> ") specifically the expression: " <> show binop <> ". Duh!")
+                    ( "("
+                        <> prettyPrint leftExpr
+                        <> "):"
+                        <> prettyPrint leftType
+                        <> " is not the same type as ("
+                        <> prettyPrint rightExpr
+                        <> "):"
+                        <> prettyPrint rightType
+                        <> ". Duh!"
+                    )
             _ <- typeCheckBinOp op leftType
             _ <- typeCheckBinOp op rightType
             _ <- checkDiv0 op rightExpr
@@ -103,7 +116,7 @@ typeCheckBinOp :: BinOp -> Type -> Either Text ()
 typeCheckBinOp binop (MkNativeType nativeTy)
     | binop `elem` [Ast.Add, Ast.Sub, Ast.Mul, Ast.Div, Ast.ShiftL] && nativeTy `elem` [I64, U64] = Right ()
     | binop `elem` [Ast.Le, Ast.Eq, Ast.Lt] && nativeTy == TyBool = Right ()
-typeCheckBinOp binop ty = Left $ T.pack $ "type " <> show ty <> " can't be handled by " <> show binop
+typeCheckBinOp binop ty = Left $ "type " <> prettyPrint ty <> " can't be handled by " <> prettyPrint binop
 
 {- | Infers binop final type.
     - I64 will be chosen over U64 if any of the *hs is signed
@@ -114,7 +127,7 @@ TODO:
 inferBinOp :: BinOp -> Type -> Type -> Either Text Type
 inferBinOp _ (MkNativeType lty) (MkNativeType rty) | lty == I64 || rty == I64 = Right (MkNativeType I64)
 inferBinOp _ (MkNativeType _) (MkNativeType _) = Right (MkNativeType U64)
-inferBinOp binop lty rty = Left $ T.pack $ "Can not infer " <> show lty <> " " <> show binop <> " " <> show rty
+inferBinOp binop lty rty = Left $ "Can not infer " <> prettyPrint lty <> " " <> prettyPrint binop <> " " <> prettyPrint rty
 
 -- | Division by zero is type checked if we know that the rhs is zero at typechecking type
 checkDiv0 :: BinOp -> Expr -> Either Text ()
@@ -127,6 +140,6 @@ checkDiv0 _ _ = Right ()
 --     TyToInfer -> Left $ T.pack ("Couldn't infer: " <> show typedExpr <> " my bad!")
 --     _ -> Right ()
 
-isSameTyWithErr :: Type -> Type -> String -> Either Text ()
+isSameTyWithErr :: Type -> Type -> Text -> Either Text ()
 isSameTyWithErr tx ty _ | tx == ty = Right ()
-isSameTyWithErr _ _ err = Left $ T.pack err
+isSameTyWithErr _ _ err = Left err
