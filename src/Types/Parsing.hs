@@ -9,22 +9,22 @@ import Parser.Defs
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
-import Types.Defs (NativeType (..), Type (..))
+import Types.Defs (Type (..))
 
-fromTypeId :: T.Text -> Either T.Text Type
+fromTypeId :: T.Text -> Either T.Text (Maybe Type)
 fromTypeId tid =
     case T.toLower tid of
-        "i64" -> Right $ MkNativeType I64
-        "u64" -> Right $ MkNativeType U64
-        "bool" -> Right $ MkNativeType TyBool
-        "()" -> Right $ MkNativeType Unit
+        "i64" -> Right . Just $ I64
+        "u64" -> Right . Just $ U64
+        "bool" -> Right . Just $ TyBool
+        "()" -> Right . Just $ Unit
         someId -> Left $ T.pack "Not valid type " <> someId
 
-parseTypeId :: Parser Type
+parseTypeId :: Parser (Maybe Type)
 parseTypeId =
     label "type identifier" . failsIfError . lexeme $ fmap (Types.Parsing.fromTypeId . pack) $ (:) <$> letterChar <*> many alphaNumChar
   where
-    failsIfError :: Parser (Either Text Type) -> Parser Type
+    failsIfError :: Parser (Either Text (Maybe Type)) -> Parser (Maybe Type)
     failsIfError parserEither = do
         res <- parserEither
         case res of

@@ -18,25 +18,25 @@ import Types.Parsing (parseTypeId)
 import qualified Types.Parsing
 import Utils (tshow)
 
-runProgramParser :: Text -> Either Text Program
+runProgramParser :: Text -> Either Text (Program Expr (Maybe Type))
 runProgramParser input =
     case parse parseProgram "" input of
         Left err -> Left (pack $ errorBundlePretty err)
         Right out -> Right out
 
 -- Stmts
-parseProgram :: Parser Program
+parseProgram :: Parser (Program Expr (Maybe Type))
 parseProgram = do
     void spaceConsumer
     stmts <- many parseStmt
     void eof
     return (Program stmts)
 
-parseStmt :: Parser Stmt
+parseStmt :: Parser (Stmt Expr (Maybe Type))
 parseStmt = lexeme $ choice [block parseStmt, parsePrint, parseReturn, try parseLet <|> parseLetToInfer]
 
 -- x : int = 3 + 3;
-parseLet :: Parser Stmt
+parseLet :: Parser (Stmt Expr (Maybe Type))
 parseLet = label "assignment" . lexeme $
     do
         void space
@@ -49,7 +49,7 @@ parseLet = label "assignment" . lexeme $
         return $ Let ty var expr
 
 -- x = 3 + 3;
-parseLetToInfer :: Parser Stmt
+parseLetToInfer :: Parser (Stmt Expr (Maybe Type))
 parseLetToInfer = label "let infer" . lexeme $
     do
         void space
@@ -57,95 +57,95 @@ parseLetToInfer = label "let infer" . lexeme $
         void (symbol "=")
         expr <- parseExpr
         void (symbol ";")
-        return $ Let TyToInfer var expr
+        return $ Let Nothing var expr
 
 -- return x;
-parseReturn :: Parser Stmt
+parseReturn :: Parser (Stmt Expr (Maybe Type))
 parseReturn = label "return" . lexeme $
     do
         void (string "return")
         void space1
         expr <- parseExpr
         void (symbol ";")
-        return . Return TyToInfer $ expr
+        return . Return Nothing $ expr
 
-parsePrint :: Parser Stmt
+parsePrint :: Parser (Stmt Expr (Maybe Type))
 parsePrint = label "print" . lexeme $
     do
         void (string "print")
         expr <- parens parseExpr
         void (symbol ";")
-        return $ Print (MkNativeType Unit) expr
+        return $ Print Unit expr
 
 --- | Exprs
-parseTerm :: Parser Expr
+parseTerm :: Parser (Expr (Maybe Type))
 parseTerm = choice [parens parseExpr, try parseSignedInt <|> parseNegation, parseInt, parseVar]
 
-parseExpr :: Parser Expr
+parseExpr :: Parser (Expr (Maybe Type))
 parseExpr = makeExprParser parseTerm opTable
 
 -- The outer list is ordered in descending precedence, so the higher we place a group of operators in it, the tighter they bind
 -- Roughly based on this https://en.cppreference.com/w/c/language/operator_precedence.html
-opTable :: [[Operator Parser Expr]]
+opTable :: [[Operator Parser (Expr (Maybe Type))]]
 opTable =
-    [ [prefix "!" (UnaryOp (MkNativeType TyBool) Ast.Not)]
+    [ [prefix "!" (UnaryOp (Just TyBool) Ast.Not)]
     ,
-        [ binary "*" (BinOp TyToInfer Ast.Mul)
-        , binary "/" (BinOp TyToInfer Ast.Div)
+        [ binary "*" (BinOp Nothing Ast.Mul)
+        , binary "/" (BinOp Nothing Ast.Div)
         ]
     ,
-        [ binary "+" (BinOp TyToInfer Ast.Add)
-        , binary "-" (BinOp TyToInfer Ast.Sub)
+        [ binary "+" (BinOp Nothing Ast.Add)
+        , binary "-" (BinOp Nothing Ast.Sub)
         ]
     ,
-        [ binary "<<" (BinOp TyToInfer Ast.ShiftL)
-      -- binary ">>" (BinOp TyToInfer Ast.ShiftR)
+        [ binary "<<" (BinOp Nothing Ast.ShiftL)
+      -- binary ">>" (BinOp Nothing Ast.ShiftR)
         ]
     ,
-        [ binary "<=" (BinOp (MkNativeType TyBool) Ast.Le)
-        , binaryFlipped ">=" (BinOp (MkNativeType TyBool) Ast.Le)
-        , binary "<" (BinOp (MkNativeType TyBool) Ast.Lt)
-        , binaryFlipped ">" (BinOp (MkNativeType TyBool) Ast.Lt)
+        [ binary "<=" (BinOp (Just TyBool) Ast.Le)
+        , binaryFlipped ">=" (BinOp (Just TyBool) Ast.Le)
+        , binary "<" (BinOp (Just TyBool) Ast.Lt)
+        , binaryFlipped ">" (BinOp (Just TyBool) Ast.Lt)
         ]
-    , -- [ binary "&" (BinOp TyToInfer Ast.BinOp.BitAnd) ],
-      -- [ binary "|" (BinOp TyToInfer Ast.BinOp.BitOr) ],
-      -- [ binary "^" (BinOp TyToInfer Ast.BinOp.BitXor) ],
-      -- [ binary "&&" (BinOp TyToInfer Ast.BinOp.And) ],
-      -- [ binary "||" (BinOp TyToInfer Ast.BinOp.Or) ],
+    , -- [ binary "&" (BinOp Nothing Ast.BinOp.BitAnd) ],
+      -- [ binary "|" (BinOp Nothing Ast.BinOp.BitOr) ],
+      -- [ binary "^" (BinOp Nothing Ast.BinOp.BitXor) ],
+      -- [ binary "&&" (BinOp Nothing Ast.BinOp.And) ],
+      -- [ binary "||" (BinOp Nothing Ast.BinOp.Or) ],
 
-        [ binary "==" (BinOp (MkNativeType TyBool) Ast.Eq)
+        [ binary "==" (BinOp (Just TyBool) Ast.Eq)
       -- binary "!=" (BinOp (mkImmNativeType TyBool) Ast.BinOp.Neq),
         ]
     ]
 
-prefix :: Text -> (Expr -> Expr) -> Operator Parser Expr
+prefix :: Text -> (Expr (Maybe Type) -> Expr (Maybe Type)) -> Operator Parser (Expr (Maybe Type))
 prefix name f = Prefix (f <$ symbol name)
 
-binary :: Text -> (Expr -> Expr -> Expr) -> Operator Parser Expr
+binary :: Text -> (Expr (Maybe Type) -> Expr (Maybe Type) -> Expr (Maybe Type)) -> Operator Parser (Expr (Maybe Type))
 binary name f = InfixL (f <$ symbol name)
 
-binaryFlipped :: Text -> (Expr -> Expr -> Expr) -> Operator Parser Expr
+binaryFlipped :: Text -> (Expr (Maybe Type) -> Expr (Maybe Type) -> Expr (Maybe Type)) -> Operator Parser (Expr (Maybe Type))
 binaryFlipped name f = InfixL (flip f <$ symbol name)
 
-parseUint :: Parser Expr
-parseUint = Const U64 . tshow <$> lexeme (L.decimal <?> "integer")
+parseUint :: Parser (Expr (Maybe Type))
+parseUint = Lit . LNum U64 <$> lexeme (L.decimal <?> "integer")
 
-parseInt :: Parser Expr
-parseInt = Const I64 . tshow <$> lexeme (L.decimal <?> "integer")
+parseInt :: Parser (Expr (Maybe Type))
+parseInt = Lit . LNum I64 <$> lexeme (L.decimal <?> "integer")
 
--- parseBool :: Parser Ast.Expr
+-- parseBool :: Parser Ast.(Expr (Maybe Type))
 -- parseBool = Ast.Const TyBool $ NativeBool <$> lexeme (L.decimal <?> "integer")
 
 -- TODO: Make this a prefix op
-parseSignedInt :: Parser Expr
+parseSignedInt :: Parser (Expr (Maybe Type))
 parseSignedInt = label "signed int" . lexeme $ do
     void (symbol "-")
-    UnaryOp (MkNativeType I64) Ast.Neg . Const I64 . tshow <$> L.decimal
+    UnaryOp (Just I64) Ast.Neg . Lit . LNum I64 <$> L.decimal
 
-parseNegation :: Parser Expr
+parseNegation :: Parser (Expr (Maybe Type))
 parseNegation = label "signed int" . lexeme $ do
     void (symbol "-")
-    UnaryOp TyToInfer Ast.Neg <$> parseExpr
+    UnaryOp Nothing Ast.Neg <$> parseExpr
 
 parseId :: Parser Text
 parseId = label "identifier" . lexeme $ do
@@ -153,8 +153,8 @@ parseId = label "identifier" . lexeme $ do
     rest <- many (alphaNumChar <|> char '-' <|> char '_')
     pure $ pack (firstLetter : rest)
 
-parseVar :: Parser Expr
-parseVar = label "var" . lexeme $ fmap (Var TyToInfer) parseId
+parseVar :: Parser (Expr (Maybe Type))
+parseVar = label "var" . lexeme $ fmap (Lit . LVar Nothing) parseId
 
 -- Experiments
 

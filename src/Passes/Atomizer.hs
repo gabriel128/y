@@ -109,16 +109,6 @@ createDoubleLetBinding exprL exprR expConstr = do
     let exprType = Ast.typeFromExpr exprL
     pure (stmtsL ++ [Let exprType varNameL exprL'] ++ stmtsR ++ [Let exprType varNameR exprR'], expConstr (LVar exprType varNameL) (LVar exprType varNameR))
 
--- If it's reduced it means that it can't be reduced further
-isReduced :: Expr Type -> Bool
-isReduced expr | isAtomic expr = True
-isReduced (BinOp _ _ expr1 expr2) = isAtomic expr1 && isAtomic expr2
-isReduced (UnaryOp _ _ expr) = isAtomic expr
-isReduced _ = False
-
 toAExpr :: Expr Type -> StateErrorRndEff Context Text (AExpr Type)
 toAExpr (Lit lit) = pure $ ALit lit
 toAExpr expr = throwError $ "Failure atomizing expr: " <> prettyPrint expr <> " for some reason didn't end up being atomic"
-
-isAtomic :: Expr Type -> Bool
-isAtomic = isAtomicExpr

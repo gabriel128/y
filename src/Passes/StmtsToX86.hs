@@ -17,14 +17,16 @@ import qualified Data.Map as M
 import qualified Data.Set as Set
 import Data.Text (Text, pack)
 import EffUtils (StateErrorEff)
+import Irs.AtomIr
 import Nasm.Data as Nasm
+import Types.Defs
 
 -- \$setup
 
 -- Map from variables to stack offets
 type LocalStackMap = M.Map Text MemDeref
 
-astToNasm :: Program -> StateErrorEff Context Text [Nasm.Instr]
+astToNasm :: Program AExpr Type -> StateErrorEff Context Text [Nasm.Instr]
 astToNasm prog = do
     localVars <- gets @Context Context.localsList
     let (stackOffset, varsStackMapping) = mapVarsToBspOffset localVars
@@ -59,7 +61,7 @@ mapVarsToBspOffset = foldr reducer (0, M.empty) . reverse
 getStackMapping :: Text -> StateErrorEff LocalStackMap Text MemDeref
 getStackMapping binding = gets (lookupEither binding) >>= liftEither
 
-fromStmtsToInstrs :: [Stmt] -> StateErrorEff LocalStackMap Text [Instr]
+fromStmtsToInstrs :: [Stmt AExpr Type] -> StateErrorEff LocalStackMap Text [Instr]
 fromStmtsToInstrs = foldl' reducer (pure [])
   where
     reducer instrs stmt = do
@@ -68,16 +70,16 @@ fromStmtsToInstrs = foldl' reducer (pure [])
         pure $ prevInstrs ++ newInstrs
 
 -- TODO: make it size aware based on the type
-fromStmtToInstrs :: Stmt -> StateErrorEff LocalStackMap Text [Instr]
+fromStmtToInstrs :: Stmt AExpr Type -> StateErrorEff LocalStackMap Text [Instr]
 fromStmtToInstrs stmt =
     case stmt of
         -- let x = 3;
-        (Let _ binding (Const _ num)) -> do
+        (Let _ binding (ALit (LNum _ num))) -> do
             x <- getStackMapping binding
             pure [Mov x num]
 
         -- x = y; -> mov rax y; mov x rax
-        (Let _ binding (Var _ binding2)) -> do
+        (Let _ binding (ALit (LVar _ binding2))) -> do
             x <- getStackMapping binding
             y <- getStackMapping binding2
             pure
@@ -86,13 +88,13 @@ fromStmtToInstrs stmt =
                 ]
 
         -- return 4;
-        (Return _ (Const _ num)) ->
+        (Return _ (ALit (LNum _ num))) ->
             pure
                 [ Mov Rax num
                 , Ret
                 ]
         -- return x;
-        (Return _ (Var _ binding)) -> do
+        (Return _ (ALit (LVar _ binding))) -> do
             x <- getStackMapping binding
             pure
                 [ Mov Rax x
@@ -100,7 +102,7 @@ fromStmtToInstrs stmt =
                 ]
 
         -- print 3
-        (Print _ (Const _ num)) ->
+        (Print _ (ALit (LNum _ num))) ->
             pure
                 [ LeaRel Rdi printFormatLabel
                 , Mov Rsi num
@@ -108,7 +110,7 @@ fromStmtToInstrs stmt =
                 , Call "printf WRT ..plt"
                 ]
         -- print x
-        (Print _ (Var _ binding)) -> do
+        (Print _ (ALit (LVar _ binding))) -> do
             x <- getStackMapping binding
             pure
                 [ LeaRel Rdi printFormatLabel
@@ -119,7 +121,7 @@ fromStmtToInstrs stmt =
 
         -- Handle addition
         -- x = 2 + 2; -> mov x, 2; add x, 2
-        (Let _ binding (BinOp _ Ast.Add (Const _ num1) (Const _ num2))) -> do
+        (Let _ binding (ABinOp _ Ast.Add (LNum _ num1) (LNum _ num2))) -> do
             x <- getStackMapping binding
             pure
                 [ Mov x num1
@@ -128,7 +130,7 @@ fromStmtToInstrs stmt =
 
         -- x = 2 + y; -> mov rax, y; add rax, 2; mov x rax
         -- x = 2 + x; -> add x, 2
-        (Let _ binding (BinOp _ Ast.Add (Const _ num) (Var _ binding2))) -> do
+        (Let _ binding (ABinOp _ Ast.Add (LNum _ num) (LVar _ binding2))) -> do
             x <- getStackMapping binding
             y <- getStackMapping binding2
             let z = (2 :: Int)
@@ -142,10 +144,10 @@ fromStmtToInstrs stmt =
                         ]
 
         -- Add is commutative so we just call the above definition
-        (Let lty binding (BinOp bty Ast.Add (Var vty binding2) (Const cty num))) ->
-            fromStmtToInstrs (Let lty binding (BinOp bty Ast.Add (Const cty num) (Var vty binding2)))
+        (Let lty binding (ABinOp bty Ast.Add (LVar vty binding2) (LNum cty num))) ->
+            fromStmtToInstrs (Let lty binding (ABinOp bty Ast.Add (LNum cty num) (LVar vty binding2)))
         -- x = z + y; -> mov rax, z; add rax, y; mov x, rax
-        (Let _ binding (BinOp _ Ast.Add (Var _ binding1) (Var _ binding2))) -> do
+        (Let _ binding (ABinOp _ Ast.Add (LVar _ binding1) (LVar _ binding2))) -> do
             x <- getStackMapping binding
             y <- getStackMapping binding1
             z <- getStackMapping binding2
@@ -157,7 +159,7 @@ fromStmtToInstrs stmt =
 
         -- Handle substaction
         -- x = 2 - 2 -> mov x, 2; sub x, 2
-        (Let _ binding (BinOp _ Ast.Sub (Const _ num1) (Const _ num2))) -> do
+        (Let _ binding (ABinOp _ Ast.Sub (LNum _ num1) (LNum _ num2))) -> do
             x <- getStackMapping binding
             pure
                 [ Mov x num1
@@ -165,7 +167,7 @@ fromStmtToInstrs stmt =
                 ]
 
         -- x = 2 - y -> mov rax, 2; sub rax, y; mov x rax
-        (Let _ binding (BinOp _ Ast.Sub (Const _ num) (Var _ binding2))) -> do
+        (Let _ binding (ABinOp _ Ast.Sub (LNum _ num) (LVar _ binding2))) -> do
             x <- getStackMapping binding
             y <- getStackMapping binding2
             pure
@@ -175,7 +177,7 @@ fromStmtToInstrs stmt =
                 ]
 
         -- x = y - 2 -> mov rax, y; sub rax, 2; mov x rax
-        (Let _ binding (BinOp _ Ast.Sub (Var _ binding2) (Const _ num))) -> do
+        (Let _ binding (ABinOp _ Ast.Sub (LVar _ binding2) (LNum _ num))) -> do
             x <- getStackMapping binding
             y <- getStackMapping binding2
             pure
@@ -185,7 +187,7 @@ fromStmtToInstrs stmt =
                 ]
 
         -- x = z - y -> mov rax, z; sub rax, y; mov x, rax
-        (Let _ binding (BinOp _ Ast.Sub (Var _ binding1) (Var _ binding2))) -> do
+        (Let _ binding (ABinOp _ Ast.Sub (LVar _ binding1) (LVar _ binding2))) -> do
             x <- getStackMapping binding
             y <- getStackMapping binding1
             z <- getStackMapping binding2
