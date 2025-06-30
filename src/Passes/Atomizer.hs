@@ -1,7 +1,7 @@
 -- TypedAtomizer
 --
 -- removes complex expressions in statments
--- and transforms them in atomic variables
+-- and transforms them in TAC version
 --
 -- Works on a Program directly
 --
@@ -15,30 +15,33 @@ module Passes.Atomizer where
 
 import Ast.Ast
 import qualified Ast.Ast as Ast
+import Ast.PrettyPrinting
 import Context (Context, addLocal)
 import Control.Carrier.Error.Either
 import Control.Carrier.Fresh.Strict
 import Control.Carrier.State.Strict
 import Data.Foldable
 import Data.Text (Text)
+import qualified Data.Text.Read as T
 import EffUtils (StateErrorEff, StateErrorEffM, StateErrorRndEff, StateErrorRndEffM)
+import Irs.AtomIr
 import Types.Defs (Type)
-import Utils
+import Utils hiding (liftEither)
 
 -- Extracts the Context and Program from the effects
-runRemComplexStmts :: Context -> Program -> Either Text (Context, Program)
+runRemComplexStmts :: Context -> Program Expr Type -> Either Text (Context, Program AExpr Type)
 runRemComplexStmts info program = run . runError . runState info $ removeComplexStmts program
 
 --  === Public Api ===
 
-removeComplexStmts :: Program -> StateErrorEffM Context Text m Program
+removeComplexStmts :: Program Expr Type -> StateErrorEffM Context Text m (Program AExpr Type)
 removeComplexStmts (Program stmts) = fmap snd $
     runFresh 0 $ do
         stmts' <- foldl' reducer (pure []) stmts
         addBindsToContext stmts'
         pure (Program stmts')
   where
-    reducer :: StateErrorRndEffM Context Text m [Stmt] -> Stmt -> StateErrorRndEffM Context Text m [Stmt]
+    reducer :: StateErrorRndEffM Context Text m [Stmt AExpr Type] -> Stmt Expr Type -> StateErrorRndEffM Context Text m [Stmt AExpr Type]
     reducer prevStmts stmt = do
         prevStmts' <- prevStmts
         stmts' <- removeComplexStmt stmt
@@ -46,70 +49,76 @@ removeComplexStmts (Program stmts) = fmap snd $
 
 -- === Private ====
 
-addBindsToContext :: [Stmt] -> StateErrorEff Context Text ()
+addBindsToContext :: [Stmt AExpr Type] -> StateErrorEff Context Text ()
 addBindsToContext = mapM_ mapper
   where
-    mapper :: Stmt -> StateErrorEff Context Text ()
+    mapper :: Stmt AExpr Type -> StateErrorEff Context Text ()
     mapper (Let _ binding _) = modify @Context (Context.addLocal binding)
     mapper _ = pure ()
 
 --  Transform a complex statment (i.e. statements that are not atomic) into sequential let bindings
-removeComplexStmt :: Stmt -> StateErrorRndEff Context Text [Stmt]
+removeComplexStmt :: Stmt Expr Type -> StateErrorRndEff Context Text [Stmt AExpr Type]
 removeComplexStmt stmt =
     case stmt of
-        stmt'@(Return _ expr) | isAtomic expr -> pure [stmt']
-        stmt'@(Print _ expr) | isAtomic expr -> pure [stmt']
-        stmt'@(Let _ _ expr) | isAtomic expr -> pure [stmt']
+        stmt'@(Return ty (Lit lit)) -> pure [Return ty (ALit lit)]
+        stmt'@(Print ty (Lit lit)) -> pure [Print ty (ALit lit)]
+        stmt'@(Let ty bind (Lit lit)) -> pure [Let ty bind (ALit lit)]
         Return ty expr -> do
-            (letStmts, lastExpr) <- letsFromComplexExp expr
+            (letStmts, lit) <- letsFromComplexExp expr
             varName <- Utils.freshVarName fresh
-            pure (letStmts ++ [Let ty varName lastExpr, Return ty (Var ty varName)])
-        Print ty expr -> do
-            (letStmts, lastExpr) <- letsFromComplexExp expr
-            varName <- Utils.freshVarName fresh
-            let exprType = Ast.typeFromExpr expr
-            pure (letStmts ++ [Let exprType varName lastExpr, Print ty (Var exprType varName)])
-        Let ty binding expr -> do
-            (stmts, lastExpr) <- letsFromComplexExp expr
-            pure (stmts ++ [Let ty binding lastExpr])
+            pure (letStmts ++ [Let ty varName lit, Return ty (ALit (LVar ty varName))])
+
+-- Print ty expr -> do
+--     (letStmts, lastExpr) <- letsFromComplexExp expr
+--     varName <- Utils.freshVarName fresh
+--     let exprType = Ast.typeFromExpr expr
+--     pure (letStmts ++ [Let exprType varName lastExpr, Print ty (ALit (LVar exprType varName))])
+-- Let ty binding expr -> do
+--     (stmts, lastExpr) <- letsFromComplexExp expr
+--     pure (stmts ++ [Let ty binding lastExpr])
 
 -- Creates let statements from complex expressions
-letsFromComplexExp :: Expr -> StateErrorRndEff Context Text ([Stmt], Expr)
+letsFromComplexExp :: Expr Type -> StateErrorRndEff Context Text ([Stmt AExpr Type], AExpr Type)
 letsFromComplexExp expr' =
     case expr' of
-        expr | isReduced expr -> pure ([], expr)
-        UnaryOp ty op expr -> createLetBinding expr (UnaryOp ty op)
-        BinOp ty op exprL exprR | isAtomic exprL -> createLetBinding exprR (BinOp ty op exprL)
-        BinOp ty op exprL exprR | isAtomic exprR -> createLetBinding exprL $ flip (BinOp ty op) exprR
-        BinOp ty op exprL exprR -> createDoubleLetBinding exprL exprR (BinOp ty op)
-        expr -> pure ([], expr)
+        UnaryOp ty op (Lit lit) -> pure ([], AUnaryOp ty op lit)
+        BinOp ty op (Lit litL) (Lit litR) -> pure ([], ABinOp ty op litL litR)
+        UnaryOp ty op expr -> createLetBinding expr (AUnaryOp ty op)
+        BinOp ty op (Lit lit) exprR -> createLetBinding exprR (ABinOp ty op lit)
+        BinOp ty op exprL (Lit lit) -> createLetBinding exprL $ flip (ABinOp ty op) lit
+        BinOp ty op exprL exprR -> createDoubleLetBinding exprL exprR (ABinOp ty op)
 
 {- | Creates a single let statement, it will have the shape of tmp_x
   where x is an incremental number
 -}
-createLetBinding :: Expr -> (Expr -> Expr) -> StateErrorRndEff Context Text ([Stmt], Expr)
-createLetBinding expr expConstr = do
+createLetBinding :: Expr Type -> (Literal Type -> AExpr Type) -> StateErrorRndEff Context Text ([Stmt AExpr Type], AExpr Type)
+createLetBinding expr' expConstr = do
+    expr <- toAExpr expr'
     varName <- Utils.freshVarName fresh
-    (stmts, expr') <- letsFromComplexExp expr
-    let exprType = Ast.typeFromExpr expr
-    pure (stmts ++ [Let exprType varName expr'], expConstr (Var exprType varName))
+    (stmts, expr'') <- letsFromComplexExp expr'
+    let exprType = Ast.typeFromExpr expr'
+    pure (stmts ++ [Let exprType varName expr''], expConstr (LVar exprType varName))
 
 -- | Utility function to create two let bindings at one from one
-createDoubleLetBinding :: Expr -> Expr -> (Expr -> Expr -> Expr) -> StateErrorRndEff Context Text ([Stmt], Expr)
+createDoubleLetBinding :: Expr Type -> Expr Type -> (Literal Type -> Literal Type -> AExpr Type) -> StateErrorRndEff Context Text ([Stmt AExpr Type], AExpr Type)
 createDoubleLetBinding exprL exprR expConstr = do
     varNameL <- Utils.freshVarName fresh
     varNameR <- Utils.freshVarName fresh
     (stmtsL, exprL') <- letsFromComplexExp exprL
     (stmtsR, exprR') <- letsFromComplexExp exprR
     let exprType = Ast.typeFromExpr exprL
-    pure (stmtsL ++ [Let exprType varNameL exprL'] ++ stmtsR ++ [Let exprType varNameR exprR'], expConstr (Var exprType varNameL) (Var exprType varNameR))
+    pure (stmtsL ++ [Let exprType varNameL exprL'] ++ stmtsR ++ [Let exprType varNameR exprR'], expConstr (LVar exprType varNameL) (LVar exprType varNameR))
 
 -- If it's reduced it means that it can't be reduced further
-isReduced :: Expr -> Bool
+isReduced :: Expr Type -> Bool
 isReduced expr | isAtomic expr = True
 isReduced (BinOp _ _ expr1 expr2) = isAtomic expr1 && isAtomic expr2
 isReduced (UnaryOp _ _ expr) = isAtomic expr
 isReduced _ = False
 
-isAtomic :: Expr -> Bool
+toAExpr :: Expr Type -> StateErrorRndEff Context Text (AExpr Type)
+toAExpr (Lit lit) = pure $ ALit lit
+toAExpr expr = throwError $ "Failure atomizing expr: " <> prettyPrint expr <> " for some reason didn't end up being atomic"
+
+isAtomic :: Expr Type -> Bool
 isAtomic = isAtomicExpr

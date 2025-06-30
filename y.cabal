@@ -36,6 +36,8 @@ library
       GeneralDS.Queue
       GeneralDS.Stack
       Interpreter.Eval
+      Irs.AtomIr
+      Irs.TypedIr
       Lib
       LocalMtl
       Nasm.Data

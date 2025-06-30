@@ -6,6 +6,7 @@ import Data.Either.Combinators
 import Data.Map as M
 import Data.Maybe
 import qualified Data.Text as T
+import Types.Defs
 import Prelude as P
 
 type Env = M.Map T.Text T.Text
@@ -17,7 +18,7 @@ type Env = M.Map T.Text T.Text
 
 --- TODO: WIP, this might become the operaational semantics at some point
 --- Interpreter
-interpExpr :: Env -> Expr -> Either T.Text T.Text
+interpExpr :: Env -> Expr Type -> Either T.Text T.Text
 interpExpr = undefined
 
 -- interpExpr _ (Const _ n) = Right n
