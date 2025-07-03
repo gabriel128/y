@@ -13,21 +13,27 @@ That's a question I keep asking myself every day, also "How?"
 ## The _Y_ Foundation
 
 This language backed up by the Y foundation where I'm the director, founder, engineer, secretary
-and decision board.
+and main board member. 
 
 # Passes
 
-The compiler goes through a couple of passes and intermediate representations
+The compiler goes through a couple of passes and intermediate representations. 
 
-0. Parser - Parses a potential _Y_ program into a `TypedProgram` representation.
-1. TypeChecker - Aggressive type checker. Aggressive as in, it will insult you and misstreat you 
-if it finds an incorrect program. 
-2. TypedAtomizer - Removes all the complex expressions and leave them in an atomic shape.
-It is from TypedAst to TypedAst
-3. TypedStmtsToX86 - Pick the stmts from the TypedAst and convert it to a type-safe NASM intermediate
-representation. It goes from TypedAst to Nasm
+0. Parser - Parses a potential _Y_ program into the AST which is Maybe typed, a `Nothing` type means that 
+   the has to be inferred later on.
+1. TypeChecker - Aggressive type checker. Aggressive as in: it will insult you and misstreat you 
+   if it finds an incorrect program, this will add the needed frustration for this language to become
+   popular, like rust. It will transform a maybe typed program into a typed program.
+   The Haskell type checker ensures at compile time that we can't construct a program with uninferred types.
+   In other words, we have a compile time checked type checker.
+2. Atomizer - Removes all the complex expressions and leaves them in an atomic shape _a la_ TAC 
+   (be careful celiacs using _Y_).
+   It converts the Ast.Expr expressions into AtomIr.AExpr, ensuring at compile time that the expressions
+   are in TAC form.
+3. StmtsToX86 - Pick the stmts from the TAC and converts them to a type-safe NASM intermediate
+   representation. 
 4. X86ToTextProg - Picks the NASM IR and transforms it to a final text, used to generate an .asm 
-later on
+   later on
 
 # How to compile a .y file
 

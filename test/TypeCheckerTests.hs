@@ -24,7 +24,7 @@ import Utils
 test_type_checking :: TestTree
 test_type_checking = testGroup "TypeChecker" unitTests
 
-runTypeCheck :: Program -> Either Text (Context, [Stmt])
+runTypeCheck :: Program Expr (Maybe Type) -> Either Text (Context, [Stmt Expr Type])
 runTypeCheck program =
     fmap (Data.Bifunctor.second progStmts) $ runStateErrorEff defaultContext $ typeCheck program
 
@@ -39,11 +39,10 @@ unitTests =
       testCase "Type inference" $ do
         _prog <- liftEither $ runTypeCheck <$> runProgramParser "x = 8;"
         assertBool "" True
-
     , testCase "Defines right hand side type if constant number" $ do
         res <- liftEither $ runTypeCheck <$> runProgramParser "x : u64 = 8; "
         (_, stmts) <- liftEither res
-        let expected = [Let (MkNativeType U64) "x" (Const U64 "8")]
+        let expected = [Let U64 "x" (Lit (LNum U64 8))]
         assertEqual "" stmts expected
     , -- --
       testCase "Type checks same type lhs rhs on binops sides" $ do

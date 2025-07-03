@@ -67,23 +67,22 @@ removeComplexStmt stmt =
             (letStmts, lit) <- letsFromComplexExp expr
             varName <- Utils.freshVarName fresh
             pure (letStmts ++ [Let ty varName lit, Return ty (ALit (LVar ty varName))])
-
--- Print ty expr -> do
---     (letStmts, lastExpr) <- letsFromComplexExp expr
---     varName <- Utils.freshVarName fresh
---     let exprType = Ast.typeFromExpr expr
---     pure (letStmts ++ [Let exprType varName lastExpr, Print ty (ALit (LVar exprType varName))])
--- Let ty binding expr -> do
---     (stmts, lastExpr) <- letsFromComplexExp expr
---     pure (stmts ++ [Let ty binding lastExpr])
+        Print ty expr -> do
+            (letStmts, lastExpr) <- letsFromComplexExp expr
+            varName <- Utils.freshVarName fresh
+            let exprType = Ast.typeFromExpr expr
+            pure (letStmts ++ [Let exprType varName lastExpr, Print ty (ALit (LVar exprType varName))])
+        Let ty binding expr -> do
+            (stmts, lastExpr) <- letsFromComplexExp expr
+            pure (stmts ++ [Let ty binding lastExpr])
 
 -- Creates let statements from complex expressions
 letsFromComplexExp :: Expr Type -> StateErrorRndEff Context Text ([Stmt AExpr Type], AExpr Type)
 letsFromComplexExp expr' =
     case expr' of
         UnaryOp ty op (Lit lit) -> pure ([], AUnaryOp ty op lit)
-        BinOp ty op (Lit litL) (Lit litR) -> pure ([], ABinOp ty op litL litR)
         UnaryOp ty op expr -> createLetBinding expr (AUnaryOp ty op)
+        BinOp ty op (Lit litL) (Lit litR) -> pure ([], ABinOp ty op litL litR)
         BinOp ty op (Lit lit) exprR -> createLetBinding exprR (ABinOp ty op lit)
         BinOp ty op exprL (Lit lit) -> createLetBinding exprL $ flip (ABinOp ty op) lit
         BinOp ty op exprL exprR -> createDoubleLetBinding exprL exprR (ABinOp ty op)
@@ -93,7 +92,6 @@ letsFromComplexExp expr' =
 -}
 createLetBinding :: Expr Type -> (Literal Type -> AExpr Type) -> StateErrorRndEff Context Text ([Stmt AExpr Type], AExpr Type)
 createLetBinding expr' expConstr = do
-    expr <- toAExpr expr'
     varName <- Utils.freshVarName fresh
     (stmts, expr'') <- letsFromComplexExp expr'
     let exprType = Ast.typeFromExpr expr'
@@ -108,7 +106,3 @@ createDoubleLetBinding exprL exprR expConstr = do
     (stmtsR, exprR') <- letsFromComplexExp exprR
     let exprType = Ast.typeFromExpr exprL
     pure (stmtsL ++ [Let exprType varNameL exprL'] ++ stmtsR ++ [Let exprType varNameR exprR'], expConstr (LVar exprType varNameL) (LVar exprType varNameR))
-
-toAExpr :: Expr Type -> StateErrorRndEff Context Text (AExpr Type)
-toAExpr (Lit lit) = pure $ ALit lit
-toAExpr expr = throwError $ "Failure atomizing expr: " <> prettyPrint expr <> " for some reason didn't end up being atomic"
