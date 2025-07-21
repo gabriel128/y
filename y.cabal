@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -27,8 +27,8 @@ source-repository head
 library
   exposed-modules:
       Ast.Ast
-      Ast.PrettyPrinting
       Ast.Examples
+      Ast.PrettyPrinting
       Context
       EffUtils
       Experiments
@@ -164,7 +164,7 @@ test-suite y-test
       TypeOperators
       UndecidableInstances
       RankNTypes
-  ghc-options: -Wall -Wincomplete-uni-patterns -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Werror -Wall -Wincomplete-uni-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.9 && <4.20
     , cmdargs

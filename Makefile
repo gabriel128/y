@@ -11,10 +11,10 @@ docker-x86_64:
 	cd x86_64; ./start_docker.sh
 
 test:
-	stack test --file-watch --fast 
+	stack test --pedantic --file-watch --fast
 
 test-specific:
 	stack test --file-watch --fast --ta '-p "liveness for ex1"'
 
 compile-watch:
-	stack build --file-watch --fast
+	stack build --file-watch --fast --pedantic

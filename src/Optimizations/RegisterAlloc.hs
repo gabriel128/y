@@ -4,7 +4,8 @@ module Optimizations.RegisterAlloc where
 
 import Ast.Ast
 import Context (Context)
-import Data.Set (Set, difference, empty, fromList, union)
+
+-- import Data.Set (Set, difference, empty, fromList, union)
 import Data.Text (Text)
 import EffUtils (StateErrorEff)
 import Irs.AtomIr
@@ -12,17 +13,17 @@ import Types.Defs
 
 -- Available Registers  rbx rcx rdx rsi rdi r8 r9 r10 r11 r12 r13 r14
 
-type LivenessBefore = Set Text
+-- type LivenessBefore = Set Text
 
-type WritesK = Set Text
+-- type WritesK = Set Text
 
-type LivenessAfterK = Set Text
+-- type LivenessAfterK = Set Text
 
-type ReadsK = Set Text
+-- type ReadsK = Set Text
 
-newtype StmtMetadata = StmtMetadata {liveness :: Set Text} deriving (Show, Eq)
+-- newtype StmtMetadata = StmtMetadata {liveness :: Set Text} deriving (Show, Eq)
 
-data EnrichedStmt = EnrichedStmt {stmtMetadata :: StmtMetadata, stmt :: Stmt AExpr Type} deriving (Show, Eq)
+-- data EnrichedStmt = EnrichedStmt {stmtMetadata :: StmtMetadata, stmt :: Stmt AExpr Type} deriving (Show, Eq)
 
 allocRegisters :: Program AExpr Type -> StateErrorEff Context Text (Program AExpr Type)
 allocRegisters = undefined

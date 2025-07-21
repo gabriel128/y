@@ -1,13 +1,15 @@
 module RegisterAllocTests (test_reg_alloc) where
 
-import Ast.Ast
-import Data.Set
-import Optimizations.RegisterAlloc
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (assertEqual, testCase)
+-- import Ast.Ast
+-- import Data.Set
+-- import Optimizations.RegisterAlloc
+import Test.Tasty (TestTree)
+
+-- import Test.Tasty.HUnit (assertEqual, testCase)
 
 test_reg_alloc :: TestTree
 test_reg_alloc = undefined
+
 -- test_reg_alloc = testGroup "Register Allocation Tests" unitTests
 
 -- ex1 :: [Stmt]

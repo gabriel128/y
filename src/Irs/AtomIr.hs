@@ -3,7 +3,6 @@
 module Irs.AtomIr where
 
 import Ast.Ast
-import Data.Foldable (Foldable (foldr'))
 import Types.Defs
 
 {- | Atomic and Typed IR _a la_ TAC (three address code)),
@@ -17,19 +16,19 @@ data AExpr t where
 
 type AtomicStmt = Stmt AExpr Type
 
-isEqALit :: Literal t -> Literal t' -> Bool
-isEqALit (LNum _ lit) (LNum _ lit') = lit == lit'
-isEqALit (LVar _ label) (LVar _ label') = label == label'
-isEqALit (LBool _ lit) (LBool _ lit') = lit == lit'
+-- isEqALit :: Literal t -> Literal t' -> Bool
+-- isEqALit (LNum _ lit) (LNum _ lit') = lit == lit'
+-- isEqALit (LVar _ label) (LVar _ label') = label == label'
+-- isEqALit (LBool _ lit) (LBool _ lit') = lit == lit'
 
-isEquivalentExpr :: Expr t -> AExpr t' -> Bool
-isEquivalentExpr (Lit lit) (ALit lit') = isEqALit lit lit'
-isEquivalentExpr (UnaryOp _ op (Lit lit)) (AUnaryOp _ op' lit') = isEqALit lit lit'
+-- isEquivalentExpr :: Expr t -> AExpr t' -> Bool
+-- isEquivalentExpr (Lit lit) (ALit lit') = isEqALit lit lit'
+-- isEquivalentExpr (UnaryOp _ op (Lit lit)) (AUnaryOp _ op' lit') = isEqALit lit lit'
 
-areEquivalentStmts :: [Stmt Expr Type] -> [Stmt AExpr Type] -> Bool
-areEquivalentStmts [] [] = True
-areEquivalentStmts stmts [] = False
-areEquivalentStmts [] stmts = False
-areEquivalentStmts (x : exprs) (y : aExprs) = undefined
+-- areEquivalentStmts :: [Stmt Expr Type] -> [Stmt AExpr Type] -> Bool
+-- areEquivalentStmts [] [] = True
+-- areEquivalentStmts _stmts [] = False
+-- areEquivalentStmts [] _stmts = False
+-- areEquivalentStmts (x : exprs) (y : aExprs) = undefined
 
 -- instance PrettyPrint AExpr

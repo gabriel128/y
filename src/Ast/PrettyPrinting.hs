@@ -1,8 +1,9 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module Ast.PrettyPrinting where
 
 import Ast.Ast
 import Data.Text
-import qualified Data.Text.Read as T
 import Types.Defs
 import Utils
 

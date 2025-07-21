@@ -1,5 +1,6 @@
 ghc-options:
   yc: -Wall
+  y: -Wall
   y-test: -Wall
 packages:
 - .

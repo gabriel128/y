@@ -15,14 +15,13 @@ module Passes.Atomizer where
 
 import Ast.Ast
 import qualified Ast.Ast as Ast
-import Ast.PrettyPrinting
+import Ast.PrettyPrinting ()
 import Context (Context, addLocal)
 import Control.Carrier.Error.Either
 import Control.Carrier.Fresh.Strict
 import Control.Carrier.State.Strict
 import Data.Foldable
 import Data.Text (Text)
-import qualified Data.Text.Read as T
 import EffUtils (StateErrorEff, StateErrorEffM, StateErrorRndEff, StateErrorRndEffM)
 import Irs.AtomIr
 import Types.Defs (Type)
@@ -60,9 +59,9 @@ addBindsToContext = mapM_ mapper
 removeComplexStmt :: Stmt Expr Type -> StateErrorRndEff Context Text [Stmt AExpr Type]
 removeComplexStmt stmt =
     case stmt of
-        stmt'@(Return ty (Lit lit)) -> pure [Return ty (ALit lit)]
-        stmt'@(Print ty (Lit lit)) -> pure [Print ty (ALit lit)]
-        stmt'@(Let ty bind (Lit lit)) -> pure [Let ty bind (ALit lit)]
+        (Return ty (Lit lit)) -> pure [Return ty (ALit lit)]
+        (Print ty (Lit lit)) -> pure [Print ty (ALit lit)]
+        (Let ty bind (Lit lit)) -> pure [Let ty bind (ALit lit)]
         Return ty expr -> do
             (letStmts, lit) <- letsFromComplexExp expr
             varName <- Utils.freshVarName fresh
@@ -80,6 +79,7 @@ removeComplexStmt stmt =
 letsFromComplexExp :: Expr Type -> StateErrorRndEff Context Text ([Stmt AExpr Type], AExpr Type)
 letsFromComplexExp expr' =
     case expr' of
+        Lit lit -> pure ([], ALit lit)
         UnaryOp ty op (Lit lit) -> pure ([], AUnaryOp ty op lit)
         UnaryOp ty op expr -> createLetBinding expr (AUnaryOp ty op)
         BinOp ty op (Lit litL) (Lit litR) -> pure ([], ABinOp ty op litL litR)

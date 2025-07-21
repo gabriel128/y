@@ -1,6 +1,6 @@
 module Utils where
 
-import Data.Text (Text, pack, unpack)
+import Data.Text (Text, pack)
 import System.Random (RandomGen (genWord32), mkStdGen)
 import System.Random.Stateful (StdGen)
 

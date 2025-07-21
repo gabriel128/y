@@ -3,11 +3,8 @@
 
 module Ast.Ast where
 
-import Data.Text
 import qualified Data.Text as T
-import Data.Text.Read (decimal)
 import Types.Defs
-import Utils
 
 data FuncLocalInfo = FuncLocalInfo
     deriving (Eq, Show)

@@ -8,6 +8,8 @@ import Utils (PrettyPrint (..))
 data Type = I64 | U64 | TyBool | Unit
     deriving (Show, Eq)
 
+class IsType t
+
 instance PrettyPrint Type where
     prettyPrint I64 = "i64"
     prettyPrint U64 = "u64"

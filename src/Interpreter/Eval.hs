@@ -1,10 +1,12 @@
 module Interpreter.Eval where
 
 import Ast.Ast
-import Control.Monad
-import Data.Either.Combinators
+
+-- import Control.Monad
+-- import Data.Either.Combinators
 import Data.Map as M
-import Data.Maybe
+
+-- import Data.Maybe
 import qualified Data.Text as T
 import Types.Defs
 import Prelude as P

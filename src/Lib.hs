@@ -1,7 +1,6 @@
 module Lib where
 
 import Ast.Ast (Expr, Program)
-import qualified Ast.Ast as Ast
 import Context (Context, defaultContext)
 import Data.Text (Text)
 import EffUtils (StateErrorEff, runStateErrorEff)

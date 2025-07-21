@@ -4,19 +4,15 @@ module Parser.Parser where
 
 import Ast.Ast
 import qualified Ast.Ast as Ast
-import qualified Ast.Ast as Ast.BinOp
 import Control.Monad
 import Control.Monad.Combinators.Expr (Operator (InfixL, Prefix), makeExprParser)
-import Data.Text (Text, pack, unpack)
-import qualified Data.Text as T
+import Data.Text (Text, pack)
 import Parser.Defs
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 import Types.Defs
 import Types.Parsing (parseTypeId)
-import qualified Types.Parsing
-import Utils (tshow)
 
 runProgramParser :: Text -> Either Text (Program Expr (Maybe Type))
 runProgramParser input =

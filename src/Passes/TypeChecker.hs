@@ -9,7 +9,7 @@ module Passes.TypeChecker where
 
 import Ast.Ast
 import qualified Ast.Ast as Ast
-import Ast.PrettyPrinting
+import Ast.PrettyPrinting ()
 import Context (Context)
 import Control.Carrier.Error.Church (liftEither)
 import Data.Either.Combinators (maybeToRight)
@@ -18,7 +18,6 @@ import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import EffUtils (StateErrorEffM)
-import Irs.TypedIr
 import Types.Defs (Type (..))
 import Utils (PrettyPrint (prettyPrint))
 
@@ -66,11 +65,13 @@ typeCheckStmt stmt typeMap =
 inferExpr :: Expr (Maybe Type) -> VarToTypeMappings -> Either Text (Expr Type)
 inferExpr texpr typeMap =
     case texpr of
-        numlit@(Lit (LNum ty val)) -> Right (Lit (LNum ty val))
+        (Lit (LNum ty val)) -> Right (Lit (LNum ty val))
+        (Lit (LBool ty val)) -> Right (Lit (LBool ty val))
         (Lit (LVar Nothing label)) -> do
             ty <- maybeToRight ("Can't infer type for " <> prettyPrint label <> ", are you sure you declared it? :|") $ M.lookup label typeMap
             Right . Lit $ LVar ty label
         (Lit (LVar (Just ty) label)) -> pure (Lit (LVar ty label))
+        UnaryOp Nothing Ast.Not _expr' -> Left $ "Not implemented yet"
         UnaryOp Nothing Ast.Neg expr' -> do
             typedExpr <- inferExpr expr' typeMap
             case typeFromExpr typedExpr of
@@ -79,31 +80,31 @@ inferExpr texpr typeMap =
         (UnaryOp (Just t) op expr) -> do
             typedExpr <- inferExpr expr typeMap
             Right $ UnaryOp t op typedExpr
-        binop@(BinOp ty op leftExpr rightExpr) -> do
-            leftExpr <- inferExpr leftExpr typeMap
-            rightExpr <- inferExpr rightExpr typeMap
-            let leftType = typeFromExpr leftExpr
-            let rightType = typeFromExpr rightExpr
+        (BinOp Nothing op leftExpr rightExpr) -> do
+            leftExpr' <- inferExpr leftExpr typeMap
+            rightExpr' <- inferExpr rightExpr typeMap
+            let leftType = typeFromExpr leftExpr'
+            let rightType = typeFromExpr rightExpr'
             _ <-
                 isSameTyWithErr
                     leftType
                     rightType
                     ( "("
-                        <> prettyPrint leftExpr
+                        <> prettyPrint leftExpr'
                         <> "):"
                         <> prettyPrint leftType
                         <> " is not the same type as ("
-                        <> prettyPrint rightExpr
+                        <> prettyPrint rightExpr'
                         <> "):"
                         <> prettyPrint rightType
                         <> ". Duh!"
                     )
             _ <- typeCheckBinOp op leftType
             _ <- typeCheckBinOp op rightType
-            _ <- checkDiv0 op rightExpr
+            _ <- checkDiv0 op rightExpr'
             opType <- inferBinOp op leftType rightType
-            Right $ BinOp opType op leftExpr rightExpr
-        tbinop@(BinOp (Just ty) op lexpr rexpr) -> do
+            Right $ BinOp opType op leftExpr' rightExpr'
+        (BinOp (Just ty) op lexpr rexpr) -> do
             -- TODO: Check all the stuff like above
             rightExpr <- inferExpr rexpr typeMap
             leftExpr <- inferExpr lexpr typeMap
@@ -112,8 +113,8 @@ inferExpr texpr typeMap =
 
 -- | Cast native expressions usueful for cases like `let x : u64 = 8;`, 8 will be u64
 castExprIfNativeInt :: Expr Type -> Type -> Expr Type
-castExprIfNativeInt const@(Lit (LNum ty x)) ty'
-    | ty == ty' = const
+castExprIfNativeInt lit@(Lit (LNum ty x)) ty'
+    | ty == ty' = lit
     | otherwise = Lit (LNum ty' x)
 castExprIfNativeInt expr _ = expr
 
