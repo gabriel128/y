@@ -71,7 +71,7 @@ inferExpr texpr typeMap =
             ty <- maybeToRight ("Can't infer type for " <> prettyPrint label <> ", are you sure you declared it? :|") $ M.lookup label typeMap
             Right . Lit $ LVar ty label
         (Lit (LVar (Just ty) label)) -> pure (Lit (LVar ty label))
-        UnaryOp Nothing Ast.Not _expr' -> Left $ "Not implemented yet"
+        UnaryOp Nothing Ast.Not _expr' -> Left "Not implemented yet"
         UnaryOp Nothing Ast.Neg expr' -> do
             typedExpr <- inferExpr expr' typeMap
             case typeFromExpr typedExpr of
@@ -89,13 +89,12 @@ inferExpr texpr typeMap =
                 isSameTyWithErr
                     leftType
                     rightType
-                    ( "("
-                        <> prettyPrint leftExpr'
-                        <> "):"
+                    ( prettyPrint leftExpr'
+                        <> ":"
                         <> prettyPrint leftType
-                        <> " is not the same type as ("
+                        <> " is not the same type as "
                         <> prettyPrint rightExpr'
-                        <> "):"
+                        <> ":"
                         <> prettyPrint rightType
                         <> ". Duh!"
                     )
@@ -121,7 +120,7 @@ castExprIfNativeInt expr _ = expr
 typeCheckBinOp :: BinOp -> Type -> Either Text ()
 typeCheckBinOp binop nativeTy
     | binop `elem` [Ast.Add, Ast.Sub, Ast.Mul, Ast.Div, Ast.ShiftL] && nativeTy `elem` [I64, U64] = Right ()
-    | binop `elem` [Ast.Le, Ast.Eq, Ast.Lt] && nativeTy == TyBool = Right ()
+    | binop `elem` [Ast.Le, Ast.Lt, Ast.Eq, Ast.Neq] && nativeTy == TyBool = Right ()
 typeCheckBinOp binop ty = Left $ "type " <> prettyPrint ty <> " can't be handled by " <> prettyPrint binop
 
 {- | Infers binop final type.

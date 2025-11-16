@@ -47,8 +47,25 @@ unitTests =
     , -- --
       testCase "Type checks same type lhs rhs on binops sides" $ do
         progErr <- liftEither $ runTypeCheck <$> runProgramParser "x : u64 = 8; y : i64 = 0; z = x + y;"
+        putStrLn (show progErr)
+        assertBool "" (isLeft progErr)
+    , -- --
+      testCase "Type checks same type lhs rhs on binops sides not inferred" $ do
+        progErr <- liftEither $ runTypeCheck <$> runProgramParser "x : u64 = 8; y : u64 = 0; z:i64 = x + y;"
         -- putStrLn (show progErr)
         assertBool "" (isLeft progErr)
+    , -- --
+      testCase "Type checks boolean TAC" $ do
+        res <- liftEither $ runTypeCheck <$> runProgramParser "x : bool = true;"
+        (_, stmts) <- liftEither res
+        let expected = [Let TyBool "x" (Lit (LBool TyBool True))]
+        assertEqual "" stmts expected
+    , -- --
+      testCase "Infers boolean" $ do
+        res <- liftEither $ runTypeCheck <$> runProgramParser "x = true;"
+        (_, stmts) <- liftEither res
+        let expected = [Let TyBool "x" (Lit (LBool TyBool True))]
+        assertEqual "" stmts expected
     , -- --
       testCase "Type checks division by 0" $ do
         prog <- liftEither $ runTypeCheck <$> runProgramParser "x = 8 / 0;"

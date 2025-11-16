@@ -75,7 +75,7 @@ parsePrint = label "print" . lexeme $
 
 --- | Exprs
 parseTerm :: Parser (Expr (Maybe Type))
-parseTerm = choice [parens parseExpr, try parseSignedInt <|> parseNegation, parseInt, parseVar]
+parseTerm = choice [parens parseExpr, try parseSignedInt <|> parseNegation, parseInt, parseBool, parseVar]
 
 parseExpr :: Parser (Expr (Maybe Type))
 parseExpr = makeExprParser parseTerm opTable
@@ -106,11 +106,13 @@ opTable =
     , -- [ binary "&" (BinOp Nothing Ast.BinOp.BitAnd) ],
       -- [ binary "|" (BinOp Nothing Ast.BinOp.BitOr) ],
       -- [ binary "^" (BinOp Nothing Ast.BinOp.BitXor) ],
-      -- [ binary "&&" (BinOp Nothing Ast.BinOp.And) ],
-      -- [ binary "||" (BinOp Nothing Ast.BinOp.Or) ],
 
+        [ binary "&&" (BinOp (Just TyBool) Ast.And)
+        , binary "||" (BinOp (Just TyBool) Ast.Or)
+        ]
+    ,
         [ binary "==" (BinOp (Just TyBool) Ast.Eq)
-      -- binary "!=" (BinOp (mkImmNativeType TyBool) Ast.BinOp.Neq),
+        , binary "!=" (BinOp (Just TyBool) Ast.Neq)
         ]
     ]
 
@@ -129,8 +131,18 @@ parseUint = Lit . LNum U64 <$> lexeme (L.decimal <?> "integer")
 parseInt :: Parser (Expr (Maybe Type))
 parseInt = Lit . LNum I64 <$> lexeme (L.decimal <?> "integer")
 
--- parseBool :: Parser Ast.(Expr (Maybe Type))
--- parseBool = Ast.Const TyBool $ NativeBool <$> lexeme (L.decimal <?> "integer")
+parseBool :: Parser (Expr (Maybe Type))
+parseBool = label "bool" . lexeme $ do
+    trueOrFalse <- string "true" <|> string "false"
+    if trueOrFalse == "true"
+        then
+            return $ Lit (LBool TyBool True)
+        else
+            return $ Lit (LBool TyBool False)
+
+-- <$> (string "true" <|> string "false")
+
+-- <?> "integer"
 
 -- TODO: Make this a prefix op
 parseSignedInt :: Parser (Expr (Maybe Type))

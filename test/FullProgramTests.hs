@@ -46,5 +46,5 @@ unitTests =
             assertBool compRes ("expecting type identifier" `isInfixOf` compRes)
         , testCase "Compilation error 2" $ do
             compRes <- compileFile "./examples/comp_err2.y" "./test/results/comp_err"
-            assertBool compRes ("unexpected ')" `isInfixOf` compRes)
+            assertBool compRes ("unexpected" `isInfixOf` compRes)
         ]

@@ -17,16 +17,19 @@ data UnaryOp
     | Not
     deriving (Eq, Show)
 
+-- Missing: ShiftR
 data BinOp
     = Add
     | Sub
     | Mul
     | Div
     | Eq
+    | Neq
     | Lt
     | Le
-    | -- | ShiftR
-      ShiftL
+    | And
+    | Or
+    | ShiftL
     deriving (Eq, Show)
 
 type Label = T.Text
@@ -43,6 +46,7 @@ data Expr t where
 data Stmt expr t where
     Let :: t -> Label -> expr t -> Stmt expr t
     Print :: Type -> expr t -> Stmt expr t
+    -- If :: expr t -> Stmt expr t -> Stmt expr t -> Stmt expr t
     Return :: t -> expr t -> Stmt expr t
     deriving (Eq, Show)
 

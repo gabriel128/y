@@ -20,8 +20,11 @@ instance PrettyPrint BinOp where
     prettyPrint Mul = " + "
     prettyPrint Div = " \\ "
     prettyPrint Eq = " == "
+    prettyPrint Neq = " != "
     prettyPrint Lt = " < "
     prettyPrint Le = " <= "
+    prettyPrint And = " && "
+    prettyPrint Or = " || "
     prettyPrint ShiftL = " << "
 
 instance (PrettyPrint t) => PrettyPrint (Literal t) where

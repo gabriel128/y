@@ -32,6 +32,11 @@ unitTests =
       testCase "parses negative integer success" $
         parse parseExpr "" "-123" @?= Right (UnaryOp (Just I64) Neg (Lit $ LNum I64 123))
     , --
+      testCase "parses true bool" $
+        parse parseExpr "" "true" @?= Right (Lit $ LBool TyBool True)
+    , testCase "parses false bool" $
+        parse parseExpr "" "false" @?= Right (Lit $ LBool TyBool False)
+    , --
       testCase "parses let stmts with const" $
         parse parseLet "" "x : u64 = 3;" @?= Right (Let (Just U64) "x" (Lit $ LNum I64 3))
     , --
@@ -40,6 +45,9 @@ unitTests =
       -- , --
       testCase "parses let stmts with var" $
         parse parseLet "" "x:i64 = y;" @?= Right (Let (Just I64) "x" (Lit $ LVar Nothing "y"))
+    , --
+      testCase "parses let stmts with bools" $
+        parse parseLet "" "x:bool = true;" @?= Right (Let (Just TyBool) "x" (Lit $ LBool TyBool True))
     , --
       testCase "parses return stmt" $
         parse parseReturn "" "return y;" @?= Right (Return Nothing (Lit $ LVar Nothing "y"))
@@ -108,6 +116,15 @@ unitTests =
                 ( Ast.BinOp
                     (Just TyBool)
                     BinOp.Eq
+                    (Lit $ LNum I64 1)
+                    (Lit $ LNum I64 2)
+                )
+    , testCase "parses not equal exprs" $
+        parse (parseExpr <* eof) "" "1 != 2"
+            @?= Right
+                ( Ast.BinOp
+                    (Just TyBool)
+                    BinOp.Neq
                     (Lit $ LNum I64 1)
                     (Lit $ LNum I64 2)
                 )
